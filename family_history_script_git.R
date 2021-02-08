@@ -101,7 +101,6 @@ count(d2 %>% filter(gp1_age_2 <25 & gp2_age_2<25 & gp3_age_2<25))       # 7
 # It actually doesn't give the number of rows unless I use nrow() or count()
 
 d2 <- d2[-c(which(d2$gp1_age_2<25 & d2$gp2_age_2<25 & d2$gp3_age_2<25)),]           # N = 582
-d2 <- d2 %>% filter(gp1_age_2 >=25 & gp2_age_2>=25 & gp3_age_2>=25)
 # Again, I'm not sure there is an easy way to use the filter fonction here, 
 # as I only want to remove the participants that fit those 2 conditions:
 # - they gave an answer for gp1_age_2, gp2_age_2, gp3_age_2
@@ -109,21 +108,22 @@ d2 <- d2 %>% filter(gp1_age_2 >=25 & gp2_age_2>=25 & gp3_age_2>=25)
 # So I would need to do something like 
 # d2 <- d2 %>% filter(!(!is.na(gp1_age_2) & gp1_age_2 <25) & (!is.na(gp2_age_2) & gp2_age_2<25) & (!is.na(gp3_age_2) & gp3_age_2<25)))
 # There is an error, does not work, I feel it is more error prone any way
+# d2 <- d2 %>% filter(gp1_age_2 >=25 & gp2_age_2>=25 & gp3_age_2>=25) deletes too many participants
 
-nrow(d3 <- d2[which(d2$parent1_age_2<25 & d2$gp1_age_2<25 & d2$gp2_age_2<25),])     #0
-nrow(d3 <- d2[which(d2$parent1_age_2<25 & d2$parent2_age_2<25 & d2$gp1_age_2<25),]) #0
+nrow(d2[which(d2$parent1_age_2<25 & d2$gp1_age_2<25 & d2$gp2_age_2<25),])     #0
+nrow(d2[which(d2$parent1_age_2<25 & d2$parent2_age_2<25 & d2$gp1_age_2<25),]) #0
 
   ### Removing data of participants who answered twice that their relatives died before the age of 25 and failed an attention test
 nrow(d2[which(d2$gp1_age_2<25 & d2$gp2_age_2<25 & d2$attention_4_1 !="4" ),])                   #0
 nrow(d2[which(d2$gp1_age_2<25 & d2$gp2_age_2<25 & d2$attention_fruit!="Strongly agree"),])      #0
 nrow(d2[which(d2$gp1_age_2<25 & d2$gp3_age_2<25 & d2$attention_4_1 !="4" ),])                   #1
-d2 <- d2[-c(which(d2$gp1_age_2<25 & d2$gp3_age_2<25 & d2$attention_4_1 !="4" )),]               # N = 582
+d2 <- d2[-c(which(d2$gp1_age_2<25 & d2$gp3_age_2<25 & d2$attention_4_1 !="4" )),]               # N = 581
 
 nrow(d2[which(d2$gp1_age_2<25 & d2$gp3_age_2<25 & d2$attention_fruit!="Strongly agree"),])      #0
 nrow(d2[which(d2$gp1_age_2<25 & d2$gp4_age_2<25 & d2$attention_4_1 !="4" ),])                   #0
 nrow(d2[which(d2$gp1_age_2<25 & d2$gp4_age_2<25 & d2$attention_fruit!="Strongly agree"),])      #0
 nrow(d2[which(d2$gp2_age_2<25 & d2$gp3_age_2<25 & d2$attention_4_1 !="4" ),])                   #1
-d2 <- d2[-c(which(d2$gp2_age_2<25 & d2$gp3_age_2<25 & d2$attention_4_1 !="4" )),]               # N = 581
+d2 <- d2[-c(which(d2$gp2_age_2<25 & d2$gp3_age_2<25 & d2$attention_4_1 !="4" )),]               # N = 580
 
 nrow(d2[which(d2$gp2_age_2<25 & d2$gp3_age_2<25 & d2$attention_fruit!="Strongly agree"),])      #0
 nrow(d2[which(d2$gp3_age_2<25 & d2$gp4_age_2<25 & d2$attention_4_1 !="4" ),])                   #0
@@ -133,11 +133,11 @@ nrow(d2[which(d2$gp2_age_2<25 & d2$gp4_age_2<25 & d2$attention_fruit!="Strongly 
 nrow(d2[which(d2$parent1_age_2<25 & d2$gp1_age_2<25 & d2$attention_4_1 !="4"),])                #0
 nrow(d2[which(d2$parent1_age_2<25 & d2$gp1_age_2<25 & d2$attention_fruit!="Strongly agree"),])  #0
 nrow(d2[which(d2$parent1_age_2<25 & d2$parent2_age_2<25 & d2$attention_4_1 !="4" ),])           #1
-d2 <- d2[-c(which(d2$parent1_age_2<25 & d2$parent2_age_2<25 & d2$attention_4_1 !="4" )),]       # N = 580
+d2 <- d2[-c(which(d2$parent1_age_2<25 & d2$parent2_age_2<25 & d2$attention_4_1 !="4" )),]       # N = 579
 
 nrow(d2[which(d2$parent1_age_2<25 & d2$parent2_age_2<25 & d2$attention_fruit !="Strongly agree" ),])  #0
 nrow(d2[which(d2$parent1_age_2<25 & d2$gp2_age_2<25 & d2$attention_4_1 !="4" ),])               #1
-d2 <- d2[-c(which(d2$parent1_age_2<25 & d2$gp2_age_2<25 & d2$attention_4_1 !="4")),]            # N = 579
+d2 <- d2[-c(which(d2$parent1_age_2<25 & d2$gp2_age_2<25 & d2$attention_4_1 !="4")),]            # N = 578
 
 nrow(d2[which(d2$parent1_age_2<25 & d2$gp2_age_2<25 & d2$attention_fruit!="Strongly agree"),])  #0
 
@@ -147,8 +147,6 @@ summary(d2$gp1_age_2)
 summary(d2$gp2_age_2)
 summary(d2$gp3_age_2)
 summary(d2$gp4_age_2)
-
-#d2[which(d2$parent2_age_2<25),] 
 
   ### Removing data of participants who were very quick and failed an attentional task
 d2$Duration..in.seconds. <- as.numeric(d2$Duration..in.seconds.)
