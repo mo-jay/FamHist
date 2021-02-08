@@ -5,11 +5,11 @@
 rm(list=ls())
 #install.packages("tidyverse")
 #install.packages("MASS")
-#library(tidyverse)
+library(tidyverse)
 #library(MASS)
 
-setwd("/Users/monou/Nextcloud/Family history questionnaire/Data analysis") # Mac France Mona
-# setwd("/Users/Monouille/Nextcloud/Shared/HSI/Family history questionnaire/Data analysis") # Macbook Mona
+# setwd("/Users/monou/Nextcloud/Family history questionnaire/Data analysis") # Mac France Mona
+# setwd("/Users/Monouille/Nextcloud/Shared/HSI/Family history questionnaire/Data analysis/FamHist") # Macbook Mona
 
 d <- read.csv("Qualtrics_fulldata.csv")                           # Read Qualtrics data
 p <- read.csv("Prolific_fulldata.csv")                            # Read Prolific data
@@ -71,6 +71,26 @@ d2$gp2_age_2[which(d2$gp2_age_2=="<20")] <- 19
 d2$gp3_age_2[which(d2$gp3_age_2=="<20")] <- 19
 d2$gp4_age_2[which(d2$gp4_age_2=="<20")] <- 19
 
+d2 <- d2 %>% mutate(parent1_age_2=recode(parent1_age_2,
+                                   "<20"=19,
+                                   ">90"=91,))
+summary(d2$parent1_age_2)
+hist(d2$parent1_age_2)
+
+d2 <- d2 %>% mutate(
+  SES_subj = case_when(
+    subjective_SES_1  == "On" ~ 10,
+    subjective_SES_2  == "On" ~ 9,
+    subjective_SES_3  == "On" ~ 8,
+    subjective_SES_4  == "On" ~ 7,
+    subjective_SES_5  == "On" ~ 6,
+    subjective_SES_6  == "On" ~ 5,
+    subjective_SES_7  == "On" ~ 4,
+    subjective_SES_8  == "On" ~ 3,
+    subjective_SES_9  == "On" ~ 2,
+    subjective_SES_10  == "On" ~ 1),
+) 
+
 d2$parent1_age_2[which(d2$parent1_age_2==">90")] <- 91
 d2$parent2_age_2[which(d2$parent2_age_2=="90")] <- 91
 d2$gp1_age_2[which(d2$gp1_age_2=="90")] <- 91
@@ -92,12 +112,9 @@ d2$gp4_age_2[which(d2$gp4_age_2=="90")] <- 91
 # d2$gp3_age_2[which(d2$gp3_age_2=="Rather not say")] <- NA
 # d2$gp4_age_2[which(d2$gp4_age_2=="Rather not say")] <- NA
 
-d2$parent1_age_2 <- as.numeric(d2$parent1_age_2)
-d2$parent2_age_2 <- as.numeric(d2$parent2_age_2)
-d2$gp1_age_2 <- as.numeric(d2$gp1_age_2)
-d2$gp2_age_2 <- as.numeric(d2$gp2_age_2)
-d2$gp3_age_2 <- as.numeric(d2$gp3_age_2)
-d2$gp4_age_2 <- as.numeric(d2$gp4_age_2)
+cols.relatives <- c("parent1_age_2","parent2_age_2","gp1_age_2","gp2_age_2","gp3_age_2","gp4_age_2")
+d2[cols.relatives] <- sapply(d2[cols.relatives],as.numeric)
+sapply(d2[cols.relatives],class)
 
       ### Removing data of participants who answered 3 times that their gp died before the age of 25
 nrow(d2[which(d2$gp1_age_2<25 & d2$gp2_age_2<25 & d2$gp3_age_2<25),])               #7     
@@ -342,108 +359,34 @@ d2$household_1 <- as.numeric(d2$household_1)
   
   ### creation of var personal annual income
 
-d2$personal_income <- NA
-for (i in 1:nrow(d2)){
-  d2$personal_income[i] <- d2$income_1[i] / d2$household_1[i]
-}
+d2 <- d2 %>% mutate(
+  personal_income = income_1 / household_1
+)
+
 summary(d2$personal_income)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-# 1250    9000   13750   16885   22500  100000
+# 1250    9000   13750   16821   22500   87500
 
-hist(d2$personal_income,breaks=15)
+hist(log(d2$personal_income))
 
-nrow(d2[which(d2$personal_income < mean(d2$personal_income)-sd(d2$personal_income)),])    # 59 declare an annual income of less than £6188
+nrow(d2[which(d2$personal_income < mean(d2$personal_income)-sd(d2$personal_income)),])    # 72 declare an annual income of less than £6188
 nrow(d2[which(d2$personal_income < 3000 & d2$attention_4_1 != "4"),])           #4 - to delete?
 
   ### Creation of var subj SES
 
 d2 <- d2 %>% mutate(
   SES_subj = case_when(
-    subjective_SES_1=="On" ~ 10
-    subjective_SES_2="On" ~ 9
-    subjective_SES_3=="On" ~ 8
-    subjective_SES_4=="On" ~ 7
-    subjective_SES_5=="On" ~ 6
-    subjective_SES_6=="On" ~ 5
-    subjective_SES_7=="On" ~ 4
-    subjective_SES_8=="On" ~ 3
-    subjective_SES_9=="On" ~ 2
-    subjective_SES_10=="On" ~ 1
-  ),
-)
-
-d2$SES_subj <- NULL
-for(i in 1:nrow(d2)){
-  if (d2$subjective_SES_1[i]=="On" & d2$subjective_SES_2[i]=="Off" 
-      & d2$subjective_SES_3[i]=="Off" & d2$subjective_SES_4[i]=="Off" 
-      & d2$subjective_SES_5[i]=="Off" & d2$subjective_SES_6[i]=="Off" 
-      & d2$subjective_SES_7[i]=="Off" & d2$subjective_SES_8[i]=="Off"
-      & d2$subjective_SES_9[i]=="Off" & d2$subjective_SES_10[i]=="Off")
-  {d2$SES_subj[i] <- 10}else{
-    if (d2$subjective_SES_1[i]=="Off" & d2$subjective_SES_2[i]=="On" 
-        & d2$subjective_SES_3[i]=="Off" & d2$subjective_SES_4[i]=="Off" 
-        & d2$subjective_SES_5[i]=="Off" & d2$subjective_SES_6[i]=="Off" 
-        & d2$subjective_SES_7[i]=="Off" & d2$subjective_SES_8[i]=="Off"
-        & d2$subjective_SES_9[i]=="Off" & d2$subjective_SES_10[i]=="Off")
-    {d2$SES_subj[i] <- 9}else{
-      if (d2$subjective_SES_1[i]=="Off" & d2$subjective_SES_2[i]=="Off"
-          & d2$subjective_SES_3[i]=="On" & d2$subjective_SES_4[i]=="Off" 
-          & d2$subjective_SES_5[i]=="Off" & d2$subjective_SES_6[i]=="Off" 
-          & d2$subjective_SES_7[i]=="Off" & d2$subjective_SES_8[i]=="Off"
-          & d2$subjective_SES_9[i]=="Off" & d2$subjective_SES_10[i]=="Off")
-      {d2$SES_subj[i] <- 8}else{
-        if (d2$subjective_SES_1[i]=="Off" & d2$subjective_SES_2[i]=="Off"
-            & d2$subjective_SES_3[i]=="Off" & d2$subjective_SES_4[i]=="On" 
-            & d2$subjective_SES_5[i]=="Off" & d2$subjective_SES_6[i]=="Off" 
-            & d2$subjective_SES_7[i]=="Off" & d2$subjective_SES_8[i]=="Off"
-            & d2$subjective_SES_9[i]=="Off" & d2$subjective_SES_10[i]=="Off")
-        {d2$SES_subj[i] <- 7}else{
-          if (d2$subjective_SES_1[i]=="Off" & d2$subjective_SES_2[i]=="Off" 
-              & d2$subjective_SES_3[i]=="Off" & d2$subjective_SES_4[i]=="Off" 
-              & d2$subjective_SES_5[i]=="On" & d2$subjective_SES_6[i]=="Off" 
-              & d2$subjective_SES_7[i]=="Off" & d2$subjective_SES_8[i]=="Off"
-              & d2$subjective_SES_9[i]=="Off" & d2$subjective_SES_10[i]=="Off")
-          {d2$SES_subj[i] <- 6}else{
-            if (d2$subjective_SES_1[i]=="Off" & d2$subjective_SES_2[i]=="Off"  
-                & d2$subjective_SES_3[i]=="Off" & d2$subjective_SES_4[i]=="Off" 
-                & d2$subjective_SES_5[i]=="Off" & d2$subjective_SES_6[i]=="On" 
-                & d2$subjective_SES_7[i]=="Off" & d2$subjective_SES_8[i]=="Off"
-                & d2$subjective_SES_9[i]=="Off" & d2$subjective_SES_10[i]=="Off")
-            {d2$SES_subj[i] <- 5}else{
-              if (d2$subjective_SES_1[i]=="Off" & d2$subjective_SES_2[i]=="Off"
-                  & d2$subjective_SES_3[i]=="Off" & d2$subjective_SES_4[i]=="Off" 
-                  & d2$subjective_SES_5[i]=="Off" & d2$subjective_SES_6[i]=="Off" 
-                  & d2$subjective_SES_7[i]=="On" & d2$subjective_SES_8[i]=="Off"
-                  & d2$subjective_SES_9[i]=="Off" & d2$subjective_SES_10[i]=="Off")
-              {d2$SES_subj[i] <- 4}else{
-                if (d2$subjective_SES_1[i]=="Off" & d2$subjective_SES_2[i]=="Off" 
-                    & d2$subjective_SES_3[i]=="Off" & d2$subjective_SES_4[i]=="Off" 
-                    & d2$subjective_SES_5[i]=="Off" & d2$subjective_SES_6[i]=="Off" 
-                    & d2$subjective_SES_7[i]=="Off" & d2$subjective_SES_8[i]=="On"
-                    & d2$subjective_SES_9[i]=="Off" & d2$subjective_SES_10[i]=="Off")
-                {d2$SES_subj[i] <- 3}else{
-                  if (d2$subjective_SES_1[i]=="Off" & d2$subjective_SES_2[i]=="Off" 
-                      & d2$subjective_SES_3[i]=="Off" & d2$subjective_SES_4[i]=="Off" 
-                      & d2$subjective_SES_5[i]=="Off" & d2$subjective_SES_6[i]=="Off" 
-                      & d2$subjective_SES_7[i]=="Off" & d2$subjective_SES_8[i]=="Off"
-                      & d2$subjective_SES_9[i]=="On" & d2$subjective_SES_10[i]=="Off")
-                  {d2$SES_subj[i] <- 2}else{
-                    if (d2$subjective_SES_1[i]=="Off" & d2$subjective_SES_2[i]=="Off" 
-                        & d2$subjective_SES_3[i]=="Off" & d2$subjective_SES_4[i]=="Off" 
-                        & d2$subjective_SES_5[i]=="Off" & d2$subjective_SES_6[i]=="Off" 
-                        & d2$subjective_SES_7[i]=="Off" & d2$subjective_SES_8[i]=="Off"
-                        & d2$subjective_SES_9[i]=="Off" & d2$subjective_SES_10[i]=="On")
-                    {d2$SES_subj[i] <- 1}
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    }
-  }
-}
+    subjective_SES_1  == "On" ~ 10,
+    subjective_SES_2  == "On" ~ 9,
+    subjective_SES_3  == "On" ~ 8,
+    subjective_SES_4  == "On" ~ 7,
+    subjective_SES_5  == "On" ~ 6,
+    subjective_SES_6  == "On" ~ 5,
+    subjective_SES_7  == "On" ~ 4,
+    subjective_SES_8  == "On" ~ 3,
+    subjective_SES_9  == "On" ~ 2,
+    subjective_SES_10  == "On" ~ 1),
+) 
 summary(d2$SES_subj)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 1.00    5.00    6.00    5.52    7.00   10.00 
