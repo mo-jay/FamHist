@@ -438,16 +438,25 @@ d_merged &lt;- merge(d,p,by=&quot;prolific_id&quot;)                           #
 
 ###### CLEANING ######
 
+d_merged$StartDate &lt;- NULL
+d_merged$EndDate &lt;- NULL
 d_merged$Status &lt;- NULL
+d_merged$IPAddress &lt;- NULL
 d_merged$ResponseId &lt;- NULL
 d_merged$RecipientLastName &lt;- NULL
 d_merged$RecipientFirstName &lt;- NULL
 d_merged$RecipientEmail &lt;- NULL
 d_merged$ExternalReference &lt;- NULL
+d_merged$LocationLatitude &lt;- NULL
+d_merged$LocationLongitude &lt;- NULL
 d_merged$DistributionChannel &lt;- NULL
 d_merged$prolific_id...Topics &lt;- NULL
 d_merged$prolific_id...Parent.Topics &lt;- NULL
 d_merged$session_id &lt;- NULL
+d_merged$started_datetime &lt;- NULL
+d_merged$completed_date_time &lt;- NULL
+d_merged$reviewed_at_datetime &lt;- NULL
+d_merged$entered_code &lt;- NULL
 
 names(d_merged)[names(d_merged) == &quot;Q85_1&quot;] &lt;- &quot;env_transport&quot;
 names(d_merged)[names(d_merged) == &quot;Q60_1&quot;] &lt;- &quot;extrinsic_risk&quot;
@@ -1128,6 +1137,77 @@ summary(d2$YPLL_sum)</code></pre>
 # 0.00    7.00   25.00   32.24   48.00  208.00 
 
     ####### PATIENCE SCORE
+
+d2 &lt;- d2 %&gt;% mutate(
+  patience_score = case_when(
+    Q23  == &quot;Today&quot; ~ 1,
+    Q23  == &quot;In 12 months&quot; ~ 2,
+    Q24  == &quot;Today&quot; ~ 3,
+    Q24  == &quot;In 12 months&quot; ~ 4,
+    Q20  == &quot;Today&quot; ~ 5,
+    Q20  == &quot;In 12 months&quot; ~ 6,
+    Q21  == &quot;Today&quot; ~ 7,
+    Q21  == &quot;In 12 months&quot; ~ 8,
+    Q31  == &quot;Today&quot; ~ 9,
+    Q31  == &quot;In 12 months&quot; ~ 10,
+    Q30  == &quot;Today&quot; ~ 11,
+    Q30  == &quot;In 12 months&quot; ~ 12,
+    Q28  == &quot;Today&quot; ~ 13,
+    Q28  == &quot;In 12 months&quot; ~ 14,
+    Q27  == &quot;Today&quot; ~ 15,
+    Q27  == &quot;In 12 months&quot; ~ 16,
+    Q16  == &quot;Today&quot; ~ 17,
+    Q16  == &quot;In 12 months&quot; ~ 18,
+    Q15  == &quot;Today&quot; ~ 19,
+    Q15  == &quot;In 12 months&quot; ~ 20,
+    Q13  == &quot;Today&quot; ~ 21,
+    Q13  == &quot;In 12 months&quot; ~ 22,
+    Q12  == &quot;Today&quot; ~ 23,
+    Q12  == &quot;In 12 months&quot; ~ 24,
+    Q8  == &quot;Today&quot; ~ 25,
+    Q8  == &quot;In 12 months&quot; ~ 26,
+    Q9  == &quot;Today&quot; ~ 27,
+    Q9  == &quot;In 12 months&quot; ~ 28,
+    Q6  == &quot;Today&quot; ~ 29,
+    Q6  == &quot;In 12 months&quot; ~ 30,
+    Q5  == &quot;Today&quot; ~ 31,
+    Q5  == &quot;In 12 months&quot; ~ 32),
+) </code></pre>
+<pre><code>## mutate: new variable &#39;patience_score&#39; (double) with 31 unique values and 0% NA</code></pre>
+<pre class="r"><code>summary(d2$patience_score)</code></pre>
+<pre><code>##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
+##    1.00    7.00   16.00   16.23   26.00   32.00</code></pre>
+<pre class="r"><code>d2$Q1 &lt;- NULL
+d2$Q2 &lt;- NULL
+d2$Q3 &lt;- NULL
+d2$Q4 &lt;- NULL
+d2$Q5 &lt;- NULL
+d2$Q6 &lt;- NULL
+d2$Q7 &lt;- NULL
+d2$Q8 &lt;- NULL
+d2$Q9 &lt;- NULL
+d2$Q10 &lt;- NULL
+d2$Q11 &lt;- NULL
+d2$Q12 &lt;- NULL
+d2$Q13 &lt;- NULL
+d2$Q14 &lt;- NULL
+d2$Q15 &lt;- NULL
+d2$Q16 &lt;- NULL
+d2$Q17 &lt;- NULL
+d2$Q18 &lt;- NULL
+d2$Q19 &lt;- NULL
+d2$Q20 &lt;- NULL
+d2$Q21 &lt;- NULL
+d2$Q22 &lt;- NULL
+d2$Q23 &lt;- NULL
+d2$Q24 &lt;- NULL
+d2$Q25 &lt;- NULL
+d2$Q26 &lt;- NULL
+d2$Q27 &lt;- NULL
+d2$Q28 &lt;- NULL
+d2$Q29 &lt;- NULL
+d2$Q30 &lt;- NULL
+d2$Q31 &lt;- NULL
 
     ######### Creation of the final data table ########
 

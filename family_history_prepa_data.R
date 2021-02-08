@@ -26,16 +26,25 @@ d_merged <- merge(d,p,by="prolific_id")                           # Merging both
 
 ###### CLEANING ######
 
+d_merged$StartDate <- NULL
+d_merged$EndDate <- NULL
 d_merged$Status <- NULL
+d_merged$IPAddress <- NULL
 d_merged$ResponseId <- NULL
 d_merged$RecipientLastName <- NULL
 d_merged$RecipientFirstName <- NULL
 d_merged$RecipientEmail <- NULL
 d_merged$ExternalReference <- NULL
+d_merged$LocationLatitude <- NULL
+d_merged$LocationLongitude <- NULL
 d_merged$DistributionChannel <- NULL
 d_merged$prolific_id...Topics <- NULL
 d_merged$prolific_id...Parent.Topics <- NULL
 d_merged$session_id <- NULL
+d_merged$started_datetime <- NULL
+d_merged$completed_date_time <- NULL
+d_merged$reviewed_at_datetime <- NULL
+d_merged$entered_code <- NULL
 
 names(d_merged)[names(d_merged) == "Q85_1"] <- "env_transport"
 names(d_merged)[names(d_merged) == "Q60_1"] <- "extrinsic_risk"
@@ -495,6 +504,75 @@ summary(d2$YPLL_sum)
 # 0.00    7.00   25.00   32.24   48.00  208.00 
 
     ####### PATIENCE SCORE
+
+d2 <- d2 %>% mutate(
+  patience_score = case_when(
+    Q23  == "Today" ~ 1,
+    Q23  == "In 12 months" ~ 2,
+    Q24  == "Today" ~ 3,
+    Q24  == "In 12 months" ~ 4,
+    Q20  == "Today" ~ 5,
+    Q20  == "In 12 months" ~ 6,
+    Q21  == "Today" ~ 7,
+    Q21  == "In 12 months" ~ 8,
+    Q31  == "Today" ~ 9,
+    Q31  == "In 12 months" ~ 10,
+    Q30  == "Today" ~ 11,
+    Q30  == "In 12 months" ~ 12,
+    Q28  == "Today" ~ 13,
+    Q28  == "In 12 months" ~ 14,
+    Q27  == "Today" ~ 15,
+    Q27  == "In 12 months" ~ 16,
+    Q16  == "Today" ~ 17,
+    Q16  == "In 12 months" ~ 18,
+    Q15  == "Today" ~ 19,
+    Q15  == "In 12 months" ~ 20,
+    Q13  == "Today" ~ 21,
+    Q13  == "In 12 months" ~ 22,
+    Q12  == "Today" ~ 23,
+    Q12  == "In 12 months" ~ 24,
+    Q8  == "Today" ~ 25,
+    Q8  == "In 12 months" ~ 26,
+    Q9  == "Today" ~ 27,
+    Q9  == "In 12 months" ~ 28,
+    Q6  == "Today" ~ 29,
+    Q6  == "In 12 months" ~ 30,
+    Q5  == "Today" ~ 31,
+    Q5  == "In 12 months" ~ 32),
+) 
+summary(d2$patience_score)
+
+d2$Q1 <- NULL
+d2$Q2 <- NULL
+d2$Q3 <- NULL
+d2$Q4 <- NULL
+d2$Q5 <- NULL
+d2$Q6 <- NULL
+d2$Q7 <- NULL
+d2$Q8 <- NULL
+d2$Q9 <- NULL
+d2$Q10 <- NULL
+d2$Q11 <- NULL
+d2$Q12 <- NULL
+d2$Q13 <- NULL
+d2$Q14 <- NULL
+d2$Q15 <- NULL
+d2$Q16 <- NULL
+d2$Q17 <- NULL
+d2$Q18 <- NULL
+d2$Q19 <- NULL
+d2$Q20 <- NULL
+d2$Q21 <- NULL
+d2$Q22 <- NULL
+d2$Q23 <- NULL
+d2$Q24 <- NULL
+d2$Q25 <- NULL
+d2$Q26 <- NULL
+d2$Q27 <- NULL
+d2$Q28 <- NULL
+d2$Q29 <- NULL
+d2$Q30 <- NULL
+d2$Q31 <- NULL
 
     ######### Creation of the final data table ########
 
