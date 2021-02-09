@@ -653,8 +653,31 @@ d2$extrinsic_risk_sqrt <- transform(
 )
 
     ## Patience score var
+hist(d2$patience_score) 
+ggdensity(d2$patience_score) # kind of bimodal
+# Maybe I can binarise it!
+d2 <- d2 %>% mutate(
+  patience_score_bi = case_when(
+    patience_score  <16  ~ "low",
+    patience_score  >=16  ~ "high"),
+) 
+d2$patience_score_bi <- as.factor(d2$patience_score_bi)
+summary(d2$patience_score_bi)
+plot(d2$patience_score_bi)
 
-hist(d2$patience_score) # Not good, but again don't see how to normalise an uniform distrib
+    ### Age 1st child var
+ggdensity(d2$age_first_child) #positively skewed
+skewness(d2$age_first_child)  #0.25
+d2$age_child1_sqrt <- transform(
+  d2$age_first_child,
+  method = "sqrt"
+)
+ggdensity(d2$age_child1_sqrt)
+skewness(d2$age_child1_sqrt) #-0.08
+
+    ### Ideal age var
+ggdensity(d2$ideal_age) #good
+skewness(d2$ideal_age)  #0.15
 
 ###################################################
 ######### Creation of the final data table ########
