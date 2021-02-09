@@ -1,150 +1,320 @@
 # Data analysis script for 'Premature mortality and timing of your life: An exploratory correlational study'
 # Mona Joly and colleagues
-# 08/02/21
+# 09/02/21
 
 rm(list=ls())
 #install.packages("tidyverse")
-#install.packages("MASS")
 #install.packages("tidylog")
 #install.packages("rmarkdown")
+# install.packages("e1071")
+# install.packages("dlookr")
+# install.packages("ggpubr")
+# install.packages("multilevel")
+# install.packages("bda")
 library(tidyverse)
 library(tidylog)
 library(rmarkdown)
+library(e1071)      # to calculate skewness
+library(dlookr)     # to transform data
+library(ggpubr)     # for density plots
+library(multilevel) # for sobel test
+library(bda)        # another way to calculate mediation
 
 # setwd("/Users/monou/Nextcloud/Family history questionnaire/Data analysis") # Mac France Mona
 # setwd("/Users/Monouille/Nextcloud/Shared/HSI/Family history questionnaire/Data analysis/FamHist") # Macbook Mona
 
 d <- read.table("data_famhist.txt",dec=",",sep="\t",header=TRUE)        # Read final data
 
-######## Looking after health
+######## Looking after health #######
+
   ## Checking distribution of look_after_health var
-hist(d2$look_after_health_1)
-qqnorm(d2$look_after_health_1)
-qqline(d2$look_after_health_1)
-hist(sqrt(max(d2$look_after_health_1+1) - d2$look_after_health_1))
-look_after_health_sqrt<- sqrt(max(d2$look_after_health_1+1) - d2$look_after_health_1)
-qqnorm(look_after_health_sqrt)
-qqline(look_after_health_sqrt,col="red")
-hist(sqrt(max(d2$look_after_health_1+1) - d2$look_after_health_1))
+hist(d$look_after_health_1)
+skewness(d$look_after_health_1) #-1.28 --> highly negatively skewed
+
+d$look_after_health_x2 <- transform(
+  d$look_after_health_1,
+  method = "x^2")
+hist(d$look_after_health_x2)
+skewness(d$look_after_health_x2) #-0.38
+ggdensity(d$look_after_health_x2)
+qqPlot(d$look_after_health_x2)
+d$look_after_health_x3 <- transform(
+  d$look_after_health_1,
+  method = "x^3")
+hist(d$look_after_health_x3)
+skewness(d$look_after_health_x3) #0.18 the best
+ggdensity(d$look_after_health_x3)
+qqPlot(d$look_after_health_x3) # also looks better graphically
 
   ## Checking distribution of YPLL_sum var
-hist(d2$YPLL_sum)  
-hist(log(d2$YPLL_sum))
-log(d2$YPLL_sum+1)
-hist(log(d2$YPLL_sum+1))
+hist(d$YPLL_sum) 
+skewness(d$YPLL_sum) #1.58 --> highly positively skewed
+d$YPLL_sqrt <- transform(
+  d$YPLL_sum,
+  method = "sqrt"
+)
+skewness(d$YPLL_sqrt) #0.08, better
+hist(d$YPLL_sqrt)
+ggdensity(d$YPLL_sqrt) # could honestly look better but can't find how
+qqPlot(d$YPLL_sqrt)
 
-lm_health1 <- lm(look_after_health_sqrt ~ log(d2$YPLL_sum+1))
+  ## Checking the age distribution
+hist(d$age.x)   # uniform distribution, don't really know what to do about it
+skewness(d$age.x) # 0.002, well at least it's symmetric
+ggdensity(d$age.x) # quite terrible. Can't see how to improve a uniform distrib.
+
+lm_health1 <- lm(scale(look_after_health_x3) ~ scale(YPLL_sqrt),data=d)
 summary(lm_health1)
 # Coefficients:
-#             Estimate Std. Error t value Pr(>|t|)    
-# (Intercept) 71.09517    1.13838   62.45   <2e-16 ***
-# d2$YPLL_sum  0.04962    0.02493    1.99    0.047 * 
+#                     Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)       4.304e-17  4.196e-02   0.000   1.0000  
+# scale(YPLL_sqrt)  1.028e-01  4.200e-02   2.447   0.0147 *
+AIC(lm_health1) #1597
 
-lm_health2 <- glm(d2$look_after_health_1 ~ log(d2$YPLL_sum) + d2$age.x + d2$gender + d2$Ethnicity..Simplified.)
+lm_health2 <- glm(scale(look_after_health_x3) ~ scale(YPLL_sqrt) + age.x + gender + Ethnicity..Simplified.,data=d)
 summary(lm_health2)
 # Coefficients:
-#                                           Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)                               71.59969    3.61099  19.828  < 2e-16 ***
-# d2$YPLL_sum                                0.02511    0.02530   0.993 0.321243    
-# d2$age.x                                   0.20016    0.05209   3.842 0.000136 ***
-# d2$gender                                 -4.09375    1.58237  -2.587 0.009932 ** 
-# d2$Ethnicity..Simplified.Black             1.00876    4.81233   0.210 0.834042    
-# d2$Ethnicity..Simplified.CONSENT REVOKED -37.24146   18.97518  -1.963 0.050187 .  
-# d2$Ethnicity..Simplified.Mixed            -3.54480    5.64616  -0.628 0.530377    
-# d2$Ethnicity..Simplified.Other            -5.64531    5.95134  -0.949 0.343248    
-# d2$Ethnicity..Simplified.White            -8.05480    3.05785  -2.634 0.008671 **
+#                              Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)                 -0.115061   0.187430  -0.614  0.53954    
+# scale(YPLL_sqrt)             0.052754   0.042980   1.227  0.22018    
+# age.x                        0.011754   0.002741   4.289 2.12e-05 ***
+# genderMale                  -0.238766   0.082032  -2.911  0.00375 ** 
+# Ethnicity..Simplified.Black  0.158012   0.249017   0.635  0.52599    
+# Ethnicity..Simplified.Mixed -0.188880   0.292285  -0.646  0.51840    
+# Ethnicity..Simplified.Other -0.335652   0.308322  -1.089  0.27679    
+# Ethnicity..Simplified.White -0.362045   0.158227  -2.288  0.02251 *
 
-lm_health3 <- glm(d2$look_after_health_1 ~ d2$YPLL_sum + d2$age.x + d2$gender + d2$Ethnicity..Simplified. + d2$personal_income + d2$SES_subj)
+d$personal_income <- as.numeric(d$personal_income)
+hist(d$personal_income)
+skewness(d$personal_income) #1.44
+ggdensity(d$personal_income)
+
+d$income_sqrt <- transform(
+  d$personal_income,
+  method = "sqrt"
+)
+skewness(d$income_sqrt) #0.4
+ggdensity(d$income_sqrt)
+qqPlot(d$income_sqrt) # Not bad
+
+d$income_log <- transform(
+  d$personal_income,
+  method = "log"
+)
+skewness(d$income_log) #-0.52
+ggdensity(d$income_log)
+qqPlot(d$income_log) # hard to say which is best
+
+skewness(d$SES_subj)
+ggdensity(d$SES_subj)
+qqPlot(d$SES_subj) # Not that bad? Transformations do not help anyway
+
+lm_health3 <- glm(scale(look_after_health_x3) ~ scale(YPLL_sqrt) + age.x + gender + Ethnicity..Simplified. + scale(income_log) + SES_subj, data=d)
 summary(lm_health3)
 # Coefficients:
-#                                           Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)                               6.295e+01  4.433e+00  14.201  < 2e-16 ***
-# d2$YPLL_sum                               3.346e-02  2.525e-02   1.325 0.185570    
-# d2$age.x                                  1.796e-01  5.207e-02   3.449 0.000605 ***
-# d2$gender                                -4.379e+00  1.574e+00  -2.782 0.005580 ** 
-# d2$Ethnicity..Simplified.Black            9.372e-01  4.779e+00   0.196 0.844610    
-# d2$Ethnicity..Simplified.CONSENT REVOKED -3.573e+01  1.884e+01  -1.896 0.058441 .  
-# d2$Ethnicity..Simplified.Mixed           -4.042e+00  5.607e+00  -0.721 0.471318    
-# d2$Ethnicity..Simplified.Other           -6.054e+00  5.905e+00  -1.025 0.305718    
-# d2$Ethnicity..Simplified.White           -7.652e+00  3.050e+00  -2.509 0.012387 *  
-# d2$personal_income                        1.682e-05  8.070e-05   0.208 0.834935    
-# d2$SES_subj                               1.606e+00  5.253e-01   3.057 0.002340 **
+#                              Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)                 -0.459702   0.240314  -1.913  0.05628 .  
+# scale(YPLL_sqrt)             0.063921   0.043143   1.482  0.13902    
+# age.x                        0.010823   0.002752   3.932 9.48e-05 ***
+# genderMale                  -0.251831   0.081995  -3.071  0.00224 ** 
+# Ethnicity..Simplified.Black  0.153225   0.248196   0.617  0.53726    
+# Ethnicity..Simplified.Mixed -0.210696   0.291343  -0.723  0.46987    
+# Ethnicity..Simplified.Other -0.352581   0.307026  -1.148  0.25131    
+# Ethnicity..Simplified.White -0.345857   0.158418  -2.183  0.02944 *  
+# scale(income_log)            0.008156   0.044593   0.183  0.85495    
+# SES_subj                     0.069104   0.027456   2.517  0.01212 * 
 
-# The older ppl are, the more they look after their health.
-# Women take better care of their health (maybe I should leave it qualitative) 1=Male;0=Female
-# White ppl take less care of their health
-# More affluent people take better care of their health
+# The older ppl are, the more they look after their health: for one additional year, they take 0.01sd better care of their health
+# Man take 0.25 sd less care of their health
+# White ppl take 0.35 sd less care of their health
+# More affluent people take better care of their health (0.07 sd more for any increase in the 10-point social ladder)
 
-lm_health4 <- glm(d2$look_after_health_1 ~ d2$YPLL_sum + d2$age.x + d2$gender + d2$Ethnicity..Simplified. + d2$personal_income + d2$SES_subj + d2$stress)
+lm_health4 <- glm(scale(look_after_health_x3) ~ scale(YPLL_sqrt) + age.x + gender + Ethnicity..Simplified. + scale(income_log) + SES_subj + stress, data=d)
 summary(lm_health4)
 # Coefficients:
-#                                           Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)                               7.221e+01  5.564e+00  12.978  < 2e-16 ***
-# d2$YPLL_sum                               3.209e-02  2.511e-02   1.278 0.201672    
-# d2$age.x                                  1.472e-01  5.312e-02   2.771 0.005774 ** 
-# d2$gender                                -5.405e+00  1.609e+00  -3.359 0.000837 ***
-# d2$Ethnicity..Simplified.Black           -3.217e-01  4.774e+00  -0.067 0.946304    
-# d2$Ethnicity..Simplified.CONSENT REVOKED -3.522e+01  1.873e+01  -1.880 0.060621 .  
-# d2$Ethnicity..Simplified.Mixed           -3.370e+00  5.580e+00  -0.604 0.546143    
-# d2$Ethnicity..Simplified.Other           -4.874e+00  5.887e+00  -0.828 0.408013    
-# d2$Ethnicity..Simplified.White           -7.245e+00  3.036e+00  -2.387 0.017342 *  
-# d2$personal_income                        1.588e-05  8.024e-05   0.198 0.843181    
-# d2$SES_subj                               1.311e+00  5.334e-01   2.458 0.014268 *  
-# d2$stress                                -1.920e+00  7.045e-01  -2.725 0.006626 **
+#                             Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)                  0.176850   0.293336   0.603 0.546828    
+# scale(YPLL_sqrt)             0.064502   0.042656   1.512 0.131067    
+# age.x                        0.008543   0.002790   3.062 0.002307 ** 
+# genderMale                  -0.322386   0.083280  -3.871 0.000121 ***
+# Ethnicity..Simplified.Black  0.068011   0.246469   0.276 0.782697    
+# Ethnicity..Simplified.Mixed -0.163930   0.288327  -0.569 0.569890    
+# Ethnicity..Simplified.Other -0.271163   0.304352  -0.891 0.373344    
+# Ethnicity..Simplified.White -0.314388   0.156858  -2.004 0.045529 *  
+# scale(income_log)            0.002713   0.044113   0.061 0.950988    
+# SES_subj                     0.049622   0.027651   1.795 0.073269 .  
+# stress                      -0.134927   0.036464  -3.700 0.000237 ***
+# The more stressed people are, the less they take care of their health (0.13 sd less care for any increase in the 6-point stress scale)
 
-# The more stressed people are, the less they take care of their health
+  ##### Does extrinsic mortality risk mediate the relationship between SES and looking after health?
 
-### Does extrinsic mortality risk mediates the relationship between SES and looking after health?
-
-lm_SES_hb <-glm(d2$look_after_health_1 ~ d2$SES_subj + d2$age.x + d2$gender)
+lm_SES_hb <-glm(scale(look_after_health_x3) ~ SES_subj + age.x + gender + Ethnicity..Simplified., data=d)
 summary(lm_SES_hb)
 # Coefficients:
-#               Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)   58.07189    3.56813  16.275  < 2e-16 ***
-# d2$SES_subj   1.68692    0.49486   3.409 0.000699 ***
-# d2$age.x      0.16350    0.04941   3.309 0.000996 ***
-# d2$gender     -4.57196    1.57955  -2.894 0.003946 **
-sd(d2$look_after_health_1)
+#                              Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)                 -0.493676   0.227282  -2.172  0.03027 *  
+# SES_subj                     0.066955   0.025642   2.611  0.00927 ** 
+# age.x                        0.012088   0.002622   4.610    5e-06 ***
+# genderMale                  -0.251758   0.081753  -3.079  0.00218 ** 
+# Ethnicity..Simplified.Black  0.128965   0.247189   0.522  0.60207    
+# Ethnicity..Simplified.Mixed -0.230787   0.290806  -0.794  0.42776    
+# Ethnicity..Simplified.Other -0.348307   0.306907  -1.135  0.25691    
+# Ethnicity..Simplified.White -0.358928   0.157269  -2.282  0.02285 * 
+# The subjective SES has a significant effect on looking after health, but the effect is very small:
+# For any increase in the 10-point social ladder, they take 0.07 sd better care of their health
 
-lm_SES_extrinsic <- glm(d2$extrinsic_risk ~ d2$SES_subj + d2$age.x + d2$gender)
+hist(d$extrinsic_risk)
+skewness(sqrt(d$extrinsic_risk))
+ggdensity(sqrt(d$extrinsic_risk))
+qqPlot(sqrt(d$extrinsic_risk))
+d$extrinsic_risk_sqrt <- transform(
+  d$extrinsic_risk,
+  method = "sqrt"
+)
+
+lm_SES_extrinsic <- glm(scale(extrinsic_risk_sqrt) ~ SES_subj + age.x + gender + Ethnicity..Simplified., data=d)
 summary(lm_SES_extrinsic)
 # Coefficients:
-#               Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)  34.64825    3.53599   9.799  < 2e-16 ***
-# d2$SES_subj  -2.14615    0.49040  -4.376 1.44e-05 ***
-# d2$age.x     -0.05121    0.04896  -1.046    0.296    
-# d2$gender     1.61831    1.56533   1.034    0.302
+#                              Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)                  0.445850   0.231734   1.924 0.054870 .  
+# SES_subj                    -0.096448   0.026145  -3.689 0.000247 ***
+# age.x                       -0.005304   0.002673  -1.984 0.047744 *  
+# genderMale                   0.056608   0.083355   0.679 0.497346    
+# Ethnicity..Simplified.Black  0.078794   0.252031   0.313 0.754673    
+# Ethnicity..Simplified.Mixed  0.539461   0.296502   1.819 0.069388 .  
+# Ethnicity..Simplified.Other  0.584956   0.312919   1.869 0.062101 .  
+# Ethnicity..Simplified.White  0.326012   0.160349   2.033 0.042515 * 
 
-lm_extrinsic_hb <- glm(d2$look_after_health_1~d2$extrinsic_risk)
+lm_extrinsic_hb <- glm(scale(look_after_health_x3)~scale(extrinsic_risk_sqrt) + age.x + gender + Ethnicity..Simplified.,data=d)
 summary(lm_extrinsic_hb)
 # Coefficients:
-#                     Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)        78.7923     1.1693   67.38  < 2e-16 ***
-# d2$extrinsic_risk  -0.2872     0.0412   -6.97 8.89e-12 ***
+#                              Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)                 -0.157582   0.182296  -0.864  0.38773    
+# scale(extrinsic_risk_sqrt)  -0.188483   0.040638  -4.638 4.39e-06 ***
+# age.x                        0.011555   0.002589   4.463 9.80e-06 ***
+# genderMale                  -0.232688   0.080602  -2.887  0.00404 ** 
+# Ethnicity..Simplified.Black  0.148734   0.244016   0.610  0.54242    
+# Ethnicity..Simplified.Mixed -0.109815   0.287617  -0.382  0.70275    
+# Ethnicity..Simplified.Other -0.225754   0.303753  -0.743  0.45767    
+# Ethnicity..Simplified.White -0.308754   0.155782  -1.982  0.04798 *  
 
-lm_SES_hb <-glm(d2$look_after_health_1 ~ d2$SES_subj + d2$age.x + d2$gender)
+lm_SES_hb <-glm(scale(look_after_health_x3) ~ SES_subj + age.x + gender+ Ethnicity..Simplified.,data=d)
 summary(lm_SES_hb)
 # Coefficients:
 #               Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)   58.07189    3.56813  16.275  < 2e-16 ***
-# d2$SES_subj   1.68692    0.49486   3.409 0.000699 ***
-# d2$age.x      0.16350    0.04941   3.309 0.000996 ***
-# d2$gender     -4.57196    1.57955  -2.894 0.003946 **
-sd(d2$look_after_health_1)
+# (Intercept)                 -0.493676   0.227282  -2.172  0.03027 *  
+# SES_subj                     0.066955   0.025642   2.611  0.00927 ** 
+# age.x                        0.012088   0.002622   4.610    5e-06 ***
+# genderMale                  -0.251758   0.081753  -3.079  0.00218 ** 
+# Ethnicity..Simplified.Black  0.128965   0.247189   0.522  0.60207    
+# Ethnicity..Simplified.Mixed -0.230787   0.290806  -0.794  0.42776    
+# Ethnicity..Simplified.Other -0.348307   0.306907  -1.135  0.25691    
+# Ethnicity..Simplified.White -0.358928   0.157269  -2.282  0.02285 *
 
-lm_extrinsic_SES_hb <- glm(d2$look_after_health_1~d2$SES_subj+d2$extrinsic_risk +d2$age.x+d2$gender)
-summary(lm_extrinsic_SES_hb) 
+lm_SES_extrinsic_hb <-glm(scale(look_after_health_x3) ~ SES_subj + scale(extrinsic_risk_sqrt) + age.x + gender + Ethnicity..Simplified.,data=d)
+summary(lm_SES_extrinsic_hb) 
 # Coefficients:
-#                    Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)       67.02322    3.73654  17.937  < 2e-16 ***
-# d2$SES_subj        1.13246    0.48691   2.326  0.02039 *  
-# d2$extrinsic_risk -0.25835    0.04126  -6.262 7.59e-10 ***
-# d2$age.x           0.15027    0.04785   3.140  0.00178 ** 
-# d2$gender         -4.15387    1.52973  -2.715  0.00682 **
+#                              Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)                 -0.415180   0.224538  -1.849   0.0650 .  
+# SES_subj                     0.049975   0.025557   1.955   0.0510 .  
+# scale(extrinsic_risk_sqrt)  -0.176060   0.041030  -4.291 2.10e-05 ***
+# age.x                        0.011154   0.002591   4.305 1.97e-05 ***
+# genderMale                  -0.241792   0.080532  -3.002   0.0028 ** 
+# Ethnicity..Simplified.Black  0.142838   0.243415   0.587   0.5576    
+# Ethnicity..Simplified.Mixed -0.135809   0.287195  -0.473   0.6365    
+# Ethnicity..Simplified.Other -0.245319   0.303147  -0.809   0.4187    
+# Ethnicity..Simplified.White -0.301530   0.155430  -1.940   0.0529 .
 
-sobel(d2$SES_subj,d2$extrinsic_risk,d2$look_after_health_1)
+## The SES effect on looking after health loses its significance once extrinsic mortality risk is added to the model --> completely mediated?
 
-########### Age at first child
+sobel(d$SES_subj,d$extrinsic_risk_sqrt,d$look_after_health_x3)
+mediation.test(d$extrinsic_risk_sqrt,d$SES_subj,d$look_after_health_x3)
+#               Sobel      Aroian     Goodman
+# z.value 2.999783276 2.961187716 3.039928416
+# p.value 0.002701718 0.003064551 0.002366344
+
+# PEMR is a mediator between subjective SES and looking after health (p<.01, z=3). Yay!
+
+####### PATIENCE SCORE ######
+hist(d$patience_score) # Not good, but again don't see how to normalise an uniform distrib
+
+lm_discounting1 <- lm(scale(patience_score) ~ scale(YPLL_sqrt),data=d)
+summary(lm_discounting1)
+# Coefficients:
+#                   Estimate Std. Error t value Pr(>|t|)
+# (Intercept)       1.856e-16  4.218e-02   0.000    1.000
+# scale(YPLL_sqrt) -9.000e-03  4.222e-02  -0.213    0.831
+
+# The nullest of the null results
+
+lm_discounting2 <- lm(scale(patience_score) ~ scale(YPLL_sqrt) + age.x + gender + Ethnicity..Simplified.,data=d)
+summary(lm_discounting2)
+# Coefficients:
+#                              Estimate Std. Error t value Pr(>|t|)
+# (Intercept)                 -0.450813   0.189922  -2.374 0.017952 *  
+# scale(YPLL_sqrt)            -0.063894   0.043551  -1.467 0.142913    
+# age.x                        0.010422   0.002777   3.753 0.000193 ***
+# genderMale                   0.172466   0.083123   2.075 0.038463 *  
+# Ethnicity..Simplified.Black -0.554994   0.252328  -2.199 0.028255 *  
+# Ethnicity..Simplified.Mixed -0.103921   0.296171  -0.351 0.725811    
+# Ethnicity..Simplified.Other  0.026894   0.312421   0.086 0.931433    
+# Ethnicity..Simplified.White -0.099965   0.160331  -0.623 0.533216 
+
+# Well, the hypothesis is confirmed, at a p-value of .15. .30 with the Holm-Bonferroni correction.
+
+lm_discounting3 <- lm(scale(patience_score) ~ scale(YPLL_sqrt) + age.x + gender + Ethnicity..Simplified. + scale(income_log) + SES_subj,data=d)
+summary(lm_discounting3)
+# Coefficients:
+#                              Estimate Std. Error t value Pr(>|t|)
+# (Intercept)                 -0.812781   0.242121  -3.357 0.000842 ***
+# scale(YPLL_sqrt)            -0.053487   0.043468  -1.230 0.219035    
+# age.x                        0.009030   0.002773   3.256 0.001197 ** 
+# genderMale                   0.148692   0.082611   1.800 0.072421 .  
+# Ethnicity..Simplified.Black -0.576615   0.250061  -2.306 0.021486 *  
+# Ethnicity..Simplified.Mixed -0.116084   0.293533  -0.395 0.692647    
+# Ethnicity..Simplified.Other  0.016034   0.309334   0.052 0.958680    
+# Ethnicity..Simplified.White -0.096346   0.159608  -0.604 0.546330    
+# scale(income_log)            0.058002   0.044928   1.291 0.197239    
+# SES_subj                     0.078944   0.027662   2.854 0.004481 **
+
+# Only effect that remains is the positive effect of SES on patience (conversely on delay discounting)
+
+lm_discounting4 <- lm(scale(patience_score) ~ scale(YPLL_sqrt) + age.x + gender + Ethnicity..Simplified. + scale(income_log) + SES_subj + stress,data=d)
+summary(lm_discounting4)
+# Coefficients:
+#                              Estimate Std. Error t value Pr(>|t|)
+# (Intercept)                 -0.872775   0.299158  -2.917  0.00367 **
+# scale(YPLL_sqrt)            -0.053541   0.043503  -1.231  0.21894   
+# age.x                        0.009245   0.002845   3.249  0.00123 **
+# genderMale                   0.155342   0.084933   1.829  0.06794 . 
+# Ethnicity..Simplified.Black -0.568584   0.251361  -2.262  0.02408 * 
+# Ethnicity..Simplified.Mixed -0.120492   0.294051  -0.410  0.68214   
+# Ethnicity..Simplified.Other  0.008360   0.310394   0.027  0.97852   
+# Ethnicity..Simplified.White -0.099312   0.159972  -0.621  0.53498   
+# scale(income_log)            0.058515   0.044989   1.301  0.19392   
+# SES_subj                     0.080781   0.028200   2.865  0.00434 **
+# stress                       0.012717   0.037187   0.342  0.73251 
+
+lm_discounting5 <- lm(scale(patience_score) ~ scale(YPLL_sqrt) + age.x + gender + Ethnicity..Simplified. + scale(income_log) + SES_subj + stress + extrinsic_risk_sqrt,data=d)
+summary(lm_discounting5)
+# Coefficients:
+#                              Estimate Std. Error t value Pr(>|t|)
+# (Intercept)                 -0.807563   0.307792  -2.624  0.00894 **
+# scale(YPLL_sqrt)            -0.050267   0.043661  -1.151  0.25011   
+# age.x                        0.009067   0.002853   3.179  0.00156 **
+# genderMale                   0.160295   0.085124   1.883  0.06022 . 
+# Ethnicity..Simplified.Black -0.560712   0.251554  -2.229  0.02622 * 
+# Ethnicity..Simplified.Mixed -0.101064   0.294885  -0.343  0.73194   
+# Ethnicity..Simplified.Other  0.027334   0.311155   0.088  0.93003   
+# Ethnicity..Simplified.White -0.086512   0.160624  -0.539  0.59038   
+# scale(income_log)            0.057114   0.045023   1.269  0.20514   
+# SES_subj                     0.078284   0.028340   2.762  0.00593 **
+# stress                       0.017473   0.037564   0.465  0.64201   
+# extrinsic_risk_sqrt         -0.017760   0.019658  -0.903  0.36668 
+
+### Even the extrinsic risk effect on delay discounting is absent!
+
+########### Age at first child ##########
 
 lm_1st_child1 <- glm(d2$age_first_child_1 ~ d2$YPLL_sum)
 summary(lm_1st_child1)

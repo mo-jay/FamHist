@@ -49,6 +49,9 @@ d_merged$entered_code <- NULL
 names(d_merged)[names(d_merged) == "Q85_1"] <- "env_transport"
 names(d_merged)[names(d_merged) == "Q60_1"] <- "extrinsic_risk"
 
+d_merged$Ethnicity..Simplified.[which(d_merged$Ethnicity..Simplified.=="CONSENT REVOKED")] <- NA
+table(d_merged$Ethnicity..Simplified.)
+
 ####### SORTING #######
 
   ### Removing participants who didn't give consent
@@ -367,7 +370,9 @@ d2$household_1 <- as.numeric(d2$household_1)
 d2 <- d2 %>% mutate(
   personal_income = income_1 / household_1
 )
+d2$personal_income <- as.numeric(d2$personal_income)
 summary(d2$personal_income)
+class(d2$personal_income)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 1250    9000   13750   16821   22500   87500
 
@@ -574,6 +579,7 @@ d2$Q29 <- NULL
 d2$Q30 <- NULL
 d2$Q31 <- NULL
 
+class(d2$personal_income)
     ######### Creation of the final data table ########
 
 write.table(d2,"data_famhist.txt",dec=".",sep="\t", row.names = F)
