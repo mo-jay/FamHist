@@ -1,7 +1,7 @@
 # Preparation of the data from the study 'Premature mortality and timing of your life: 
 # An exploratory correlational study' for analysis
 # Mona Joly and colleagues
-# 09/02/21
+# 10/02/21
 
 rm(list=ls())
 #install.packages("tidyverse")

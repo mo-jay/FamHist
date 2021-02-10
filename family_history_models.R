@@ -1,6 +1,6 @@
 # Data analysis script for 'Premature mortality and timing of your life: An exploratory correlational study'
 # Mona Joly and colleagues
-# 09/02/21
+# 10/02/21
 
 rm(list=ls())
 #install.packages("tidyverse")
@@ -31,7 +31,13 @@ d[cols.num] <- sapply(d[cols.num],as.numeric)
 d$patience_score_bi <- as.factor(d$patience_score_bi)
 sapply(d[cols.num],class)
 
+################################
+######## MAIN ANALYSIS #########
+################################
+
+#####################################
 ######## Looking after health #######
+#####################################
 
 lm_health1 <- lm(scale(look_after_health_x3) ~ scale(YPLL_sqrt),data=d)
 summary(lm_health1)
@@ -93,7 +99,7 @@ summary(lm_health4)
 # stress            -0.134927   0.036464  -3.700 0.000237 ***
 # The more stressed people are, the less they take care of their health (0.13 sd less care for any increase in the 6-point stress scale)
 
-  ##### Does extrinsic mortality risk mediate the relationship between SES and looking after health?
+  ##### Does extrinsic mortality risk mediate the relationship between SES and looking after health? ####
 
 lm_SES_hb <-glm(scale(look_after_health_x3) ~ SES_subj + age + gender + ethnicity, data=d)
 summary(lm_SES_hb)
@@ -173,7 +179,9 @@ mediation.test(d$extrinsic_risk_sqrt,d$SES_subj,d$look_after_health_x3)
 
 # PEMR is a mediator between subjective SES and looking after health (p<.01, z=3). Yay!
 
-####### PATIENCE SCORE ######
+##############################
+####### PATIENCE SCORE #######
+##############################
 
 lm_discounting1 <- lm(scale(patience_score) ~ scale(YPLL_sqrt),data=d)
 summary(lm_discounting1)
@@ -251,6 +259,10 @@ summary(lm_discounting5)
 
 ### Even the extrinsic risk effect on delay discounting is absent!
 
+#################################
+###### Secondary analyses #######
+#################################
+
 ########### Age at first child ##########
 
 lm_1st_child1 <- glm(scale(age_child1_sqrt) ~ scale(YPLL_sqrt), data=d)
@@ -305,84 +317,56 @@ summary(lm_1st_child4)
 # stress             0.101678   0.050248   2.024 0.043908 *
 
 
-############## Ideal age at first child
+########### Ideal age at first child ########
 
-lm_ideal_child1 <- glm(d2$ideal_age ~ d2$YPLL_sum)
+lm_ideal_child1 <- glm(ideal_age ~ scale(YPLL_sqrt), data=d)
 summary(lm_1st_child1)
 # Coefficients:
-#               Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)   27.979714   0.541063   51.71   <2e-16 ***
-# d2$YPLL_sum   -0.008565   0.011121   -0.77    0.442 
+#                   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)      -0.001084   0.057291  -0.019    0.985
+# scale(YPLL_sqrt)  0.007712   0.058267   0.132    0.895
 
-lm_ideal_child2 <- glm(d2$ideal_age ~ d2$YPLL_sum + d2$age + d2$gender + d2$ethnicity)
+lm_ideal_child2 <- glm(ideal_age ~ scale(YPLL_sqrt) + age + gender + ethnicity, data=d)
 summary(lm_1st_child2)
 # Coefficients:
-#                                           Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)                               23.87482    2.06838  11.543  < 2e-16 ***
-# d2$YPLL_sum                              -0.01037    0.01107  -0.937 0.349602    
-# d2$age                                  0.01639    0.02903   0.565 0.572781    
-# d2$gender                                 2.59062    0.71857   3.605 0.000364 ***
-# d2$ethnicityBlack            1.75483    2.46426   0.712 0.476942    
-# d2$ethnicityCONSENT REVOKED  6.09764    6.44500   0.946 0.344847    
-# d2$ethnicityMixed           -3.01310    2.66094  -1.132 0.258383    
-# d2$ethnicityOther            5.67592    2.94088   1.930 0.054537 .  
-# d2$ethnicityWhite            2.38235    1.50171   1.586 0.113681 
+#                   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)      -0.659735   0.321063  -2.055 0.040751 *  
+# scale(YPLL_sqrt) -0.006203   0.058381  -0.106 0.915454    
+# age               0.002135   0.004572   0.467 0.640785    
+# genderMale        0.381506   0.112184   3.401 0.000762 ***
+# ethnicityBlack    0.317338   0.383345   0.828 0.408427    
+# ethnicityMixed   -0.484947   0.414477  -1.170 0.242912    
+# ethnicityOther    0.935423   0.458405   2.041 0.042157 *  
+# ethnicityWhite    0.419631   0.233676   1.796 0.073525 . 
 
-lm_ideal_child3 <- glm(d2$ideal_age ~ d2$YPLL_sum + d2$age + d2$gender + d2$ethnicity + d2$personal_income + d2$SES_subj)
+lm_ideal_child3 <- glm(ideal_age ~scale(YPLL_sqrt) + age + gender + ethnicity + scale(income_log) + SES_subj, data=d)
 summary(lm_1st_child3)
 # Coefficients:
-#                                           Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)                               1.962e+01  2.389e+00   8.215 6.27e-15 ***
-# d2$YPLL_sum                              -4.847e-03  1.101e-02  -0.440 0.659985    
-# d2$age                                  1.412e-02  2.866e-02   0.493 0.622529    
-# d2$gender                                 2.428e+00  7.145e-01   3.398 0.000770 ***
-# d2$ethnicityBlack            1.754e+00  2.424e+00   0.724 0.469854    
-# d2$ethnicityCONSENT REVOKED  6.477e+00  6.350e+00   1.020 0.308564    
-# d2$ethnicityMixed           -3.377e+00  2.621e+00  -1.288 0.198609    
-# d2$ethnicityOther            5.792e+00  2.898e+00   1.998 0.046577 *  
-# d2$ethnicityWhite            2.811e+00  1.490e+00   1.886 0.060279 .  
-# d2$personal_income                       -5.412e-05  4.191e-05  -1.291 0.197539    
-# d2$SES_subj                               8.406e-01  2.409e-01   3.489 0.000557 ***
+#                    Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)       -1.411090   0.392548  -3.595 0.000379 ***
+# scale(YPLL_sqrt)   0.020819   0.057929   0.359 0.719552    
+# age                0.001499   0.004507   0.333 0.739605    
+# genderMale         0.352728   0.111835   3.154 0.001773 ** 
+# ethnicityBlack     0.319813   0.376994   0.848 0.396932    
+# ethnicityMixed    -0.549676   0.408231  -1.346 0.179159    
+# ethnicityOther     0.946140   0.452133   2.093 0.037221 *  
+# ethnicityWhite     0.478516   0.232734   2.056 0.040639 *  
+# scale(income_log) -0.061012   0.068127  -0.896 0.371200    
+# SES_subj           0.131486   0.038122   3.449 0.000643 ***
 
-lm_ideal_child3 <- glm(d2$ideal_age ~ d2$YPLL_sum + d2$age + d2$gender + d2$ethnicity + d2$personal_income + d2$SES_subj + d2$stress)
-summary(lm_1st_child3)
-# Coefficients:
-#                                           Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)                               1.962e+01  2.389e+00   8.215 6.27e-15 ***
-# d2$YPLL_sum                              -4.847e-03  1.101e-02  -0.440 0.659985    
-# d2$age                                  1.412e-02  2.866e-02   0.493 0.622529    
-# d2$gender                                 2.428e+00  7.145e-01   3.398 0.000770 ***
-# d2$ethnicityBlack            1.754e+00  2.424e+00   0.724 0.469854    
-# d2$ethnicityCONSENT REVOKED  6.477e+00  6.350e+00   1.020 0.308564    
-# d2$ethnicityMixed           -3.377e+00  2.621e+00  -1.288 0.198609    
-# d2$ethnicityOther            5.792e+00  2.898e+00   1.998 0.046577 *  
-# d2$ethnicityWhite            2.811e+00  1.490e+00   1.886 0.060279 .  
-# d2$personal_income                       -5.412e-05  4.191e-05  -1.291 0.197539    
-# d2$SES_subj                               8.406e-01  2.409e-01   3.489 0.000557 *** 
-
-
-############### Mediation of extrinsic risk
-
-lm_health_extrinsic <- glm(d2$look_after_health ~ d2$extrinsic_risk)
-summary(lm_health_extrinsic)
+lm_ideal_child4 <- glm(ideal_age ~scale(YPLL_sqrt) + age + gender + ethnicity + scale(income_log) + SES_subj + stress, data=d)
+summary(lm_1st_child4)
 # Coefficients:
 #                     Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)         50.0706     3.3372   15.00  < 2e-16 ***
-# d2$extrinsic_risk   0.2872     0.0412    6.97 8.89e-12 ***
-
-lm_extrinsic_YPLL <- glm(d2$extrinsic_risk ~ d2$YPLL_sum)
-summary(lm_extrinsic_YPLL)
-# Coefficients:
-#                     Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)         79.53124    1.12107   70.94   <2e-16 ***
-# d2$YPLL_sum         -0.02357    0.02455   -0.96    0.337 
-
-lm_extrinsic_YPLL_health <- glm(d2$look_after_health ~ d2$YPLL_sum * d2$extrinsic_risk)
-summary(lm_extrinsic_YPLL_health)
-# Coefficients:
-#                               Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)                   43.958746   4.821345   9.118  < 2e-16 ***
-# d2$YPLL_sum                    0.169035   0.098362   1.719   0.0863 .  
-# d2$extrinsic_risk              0.341527   0.059246   5.765 1.35e-08 ***
-# d2$YPLL_sum:d2$extrinsic_risk -0.001438   0.001219  -1.180   0.2386    
+# (Intercept)       -1.888061   0.456166  -4.139 4.54e-05 ***
+# scale(YPLL_sqrt)   0.019821   0.057636   0.344 0.731160    
+# age                0.003571   0.004599   0.776 0.438114    
+# genderMale         0.412386   0.115105   3.583 0.000397 ***
+# ethnicityBlack     0.349706   0.375362   0.932 0.352266    
+# ethnicityMixed    -0.596154   0.406797  -1.465 0.143837    
+# ethnicityOther     0.914794   0.450093   2.032 0.042988 *  
+# ethnicityWhite     0.458620   0.231756   1.979 0.048742 *  
+# scale(income_log) -0.050126   0.067993  -0.737 0.461563    
+# SES_subj           0.140646   0.038196   3.682 0.000274 ***
+# stress             0.101678   0.050248   2.024 0.043908 * 
 
