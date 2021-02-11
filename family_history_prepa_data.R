@@ -410,100 +410,125 @@ d2$subjective_SES_10 <- NULL
 
   ### Creation of YPLL for each relative
   # 1st dead parent
-
-d2$YPLL_p1 <- NULL
-for(i in 1:nrow(d2)){
-  if (is.na(d2$parent1_age_2[i])){d2$YPLL_p1[i] <- 0}else{    # have to replace NA with 0 for now
-    if (d2$parent1_age_2[i]>=75) {d2$YPLL_p1[i] <- 0} else{ 
-      if (d2$parent1_age_2[i]<75){
-        d2$YPLL_p1[i] <- 75 - d2$parent1_age_2[i]
-        }
-    }
-  }
-}
-summary(d2$YPLL_p1) # with NA
+d2 <- d2 %>% mutate(
+  YPLL_p1 = case_when(
+    parents_dead == 0 ~ 0,
+    parent1_age_2 >= 75 ~ 0,
+    parent1_age_2 < 75 ~ 75 - parent1_age_2),
+)
+# d2 %>% filter(is.na(YPLL_p1))
+summary(d2$YPLL_p1)
 #     Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-#    0.00    0.00    4.00   10.84   16.50   56.00     293 
+#    0.000   0.000   0.000   5.224   3.000  56.000       4 
 
   # 2nd dead parent
-
-d2$YPLL_p2 <- NULL
-for(i in 1:nrow(d2)){
-  if (is.na(d2$parent2_age_2[i])){d2$YPLL_p2[i] <- 0}else{
-    if (d2$parent2_age_2[i]>=75) {d2$YPLL_p2[i] <- 0} else{ 
-      if (d2$parent2_age_2[i]<75){
-        d2$YPLL_p2[i] <- 75 - d2$parent2_age_2[i]
-      }
-    }
-  }
-}
+d2 <- d2 %>% mutate(
+  YPLL_p2 = case_when(
+    parents_dead == 0 | parents_dead == 1 ~ 0,
+    parent2_age_2 >= 75 ~ 0,
+    parent2_age_2 < 75 ~ 75 - parent2_age_2),
+)
+# d2 %>% filter(is.na(YPLL_p2))
 summary(d2$YPLL_p2) #with NA
 #     Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-#   0.000   0.000   0.000   6.529  10.000  50.000     445 
+#   0.00    0.00    0.00    1.41    0.00   50.00      12 
 
   # 1st dead grandparent
-d2$YPLL_gp1 <- NULL
-for(i in 1:nrow(d2)){
-  if (is.na(d2$gp1_age_2[i])){d2$YPLL_gp1[i] <- 0}else{
-    if (d2$gp1_age_2[i]>=75) {d2$YPLL_gp1[i] <- 0} else{ 
-      if (d2$gp1_age_2[i]<75){d2$YPLL_gp1[i] <- 75 - d2$gp1_age_2[i]
-      }
-    }
-  }
-}
-summary(d2$YPLL_gp1) #with NA
+d2 <- d2 %>% mutate(
+  YPLL_gp1 = case_when(
+    gp_dead == 0 ~ 0,
+    gp1_age_2 >= 75 ~ 0,
+    gp1_age_2 < 75 ~ 75 - gp1_age_2),
+)
+# d2 %>% filter(is.na(YPLL_gp1))
+summary(d2$YPLL_gp1)
 #     Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-#     0.0     0.0     9.0    12.4    20.0    56.0      52 
+#     0.00    0.00    8.00   12.07   20.00   56.00      37 
 
   #2nd dead grandparent
-d2$YPLL_gp2 <- NULL
-for(i in 1:nrow(d2)){
-  if (is.na(d2$gp2_age_2[i])){d2$YPLL_gp2[i] <- 0}else{
-    if (d2$gp2_age_2[i]>=75) {d2$YPLL_gp2[i] <- 0} else{ 
-      if (d2$gp2_age_2[i]<75){d2$YPLL_gp2[i] <- 75 - d2$gp2_age_2[i]
-      }
-    }
-  }
-}
+d2 <- d2 %>% mutate(
+  YPLL_gp2 = case_when(
+    gp_dead == 0 | gp_dead == 1 ~ 0,
+    gp2_age_2 >= 75 ~ 0,
+    gp2_age_2 < 75 ~ 75 - gp2_age_2),
+)
+d2 %>% filter(is.na(YPLL_gp2))
 summary(d2$YPLL_gp2)
 #     Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-#     0.000   0.000   3.000   8.069  11.000  56.000     112
+#    0.000   0.000   0.000   7.353  10.000  56.000      67
 
   #3rd dead grandparent
-d2$YPLL_gp3 <- NULL
-for(i in 1:nrow(d2)){
-  if (is.na(d2$gp3_age_2[i])){d2$YPLL_gp3[i] <- 0}else{
-    if (d2$gp3_age_2[i]>=75) {d2$YPLL_gp3[i] <- 0} else{ 
-      if (d2$gp3_age_2[i]<75){d2$YPLL_gp3[i] <- 75 - d2$gp3_age_2[i]
-      }
-    }
-  }
-}
+d2 <- d2 %>% mutate(
+  YPLL_gp3 = case_when(
+    gp_dead == 0 | gp_dead == 1 | gp_dead == 2 ~ 0,
+    gp3_age_2 >= 75 ~ 0,
+    gp3_age_2 < 75 ~ 75 - gp3_age_2),
+)
+d2 %>% filter(is.na(YPLL_gp3))
 summary(d2$YPLL_gp3)
 #     Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-#     0.000   0.000   0.000   6.715  10.000  50.000     161
+#    0.000   0.000   0.000   5.348   7.000  50.000      57
 
   #4th dead grandparent
-d2$YPLL_gp4 <- NULL
-for(i in 1:nrow(d2)){
-  if (is.na(d2$gp4_age_2[i])){d2$YPLL_gp4[i] <- 0}else{
-    if (d2$gp4_age_2[i]>=75) {d2$YPLL_gp4[i] <- 0} else{ 
-      if (d2$gp4_age_2[i]<75){d2$YPLL_gp4[i] <- 75 - d2$gp4_age_2[i]
-      }
-    }
-  }
-}
+d2 <- d2 %>% mutate(
+  YPLL_gp4 = case_when(
+    gp_dead == 0 | gp_dead == 1 | gp_dead == 2 | gp_dead == 3 ~ 0,
+    gp4_age_2 >= 75 ~ 0,
+    gp4_age_2 < 75 ~ 75 - gp4_age_2),
+)
+d2 %>% filter(is.na(YPLL_gp4))
 summary(d2$YPLL_gp4)
 #     Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-#     0.000   0.000   0.000   5.897   7.250  51.000     264
+#     0.00    0.00    0.00    3.74    2.00   51.00      90
 
   ### Creation of sum of YPLL var - only works without NA
-d2$YPLL_sum <- NA
-for (i in 1:nrow(d2)){
-  d2$YPLL_sum[i] <- d2$YPLL_p1[i] + d2$YPLL_p2[i] + d2$YPLL_gp1[i] + d2$YPLL_gp2[i] + d2$YPLL_gp3[i] + d2$YPLL_gp4[i]} 
+d2 <- d2 %>% mutate(
+  YPLL_sum = YPLL_p1 + YPLL_p2 + YPLL_gp1 + YPLL_gp2 + YPLL_gp3 + YPLL_gp4
+)
+d2 %>% filter(is.na(YPLL_sum))
 summary(d2$YPLL_sum)
-# Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
-# 0.00    7.00   25.00   32.24   48.00  208.00 
+# Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+# 0.00    9.00   27.00   34.08   50.00  208.00     170 
+
+  ### Creation of sum of deaths in the family
+d2 <- d2 %>% mutate(
+  n_deaths = parents_dead + gp_dead
+)
+d2 %>% filter(is.na(n_deaths))
+summary(d2$n_deaths)
+ggdensity(d2$n_deaths)
+
+  ### Creation of sum of premature deaths within the family
+d2 <- d2 %>% mutate(
+  n_prem_deaths = case_when(
+    YPLL_p1 >0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 1,
+    YPLL_p1 ==0 & YPLL_p2 >0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 1,
+    YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 > 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 1,
+    YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 > 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 1,
+    YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 > 0 & YPLL_gp4 == 0 ~ 1,
+    YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 > 0 ~ 1,
+    YPLL_p1 >0 & YPLL_p2 >0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
+    YPLL_p1 >0 & YPLL_p2 ==0 & YPLL_gp1 > 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
+    YPLL_p1 >0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 > 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
+    YPLL_p1 >0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 > 0 & YPLL_gp4 == 0 ~ 2,
+    YPLL_p1 >0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 > 0 ~ 2,
+    YPLL_p1 ==0 & YPLL_p2 >0 & YPLL_gp1 > 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
+    YPLL_p1 ==0 & YPLL_p2 >0 & YPLL_gp1 == 0 & YPLL_gp2 > 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
+    YPLL_p1 ==0 & YPLL_p2 >0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 > 0 & YPLL_gp4 == 0 ~ 2,
+    YPLL_p1 ==0 & YPLL_p2 >0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 > 0 ~ 2,
+    YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 > 0 & YPLL_gp2 > 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
+    YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 > 0 & YPLL_gp2 == 0 & YPLL_gp3 > 0 & YPLL_gp4 == 0 ~ 2,
+    YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 > 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 > 0 ~ 2,
+    YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 > 0 & YPLL_gp3 > 0 & YPLL_gp4 == 0 ~ 2,
+    YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 > 0 & YPLL_gp3 == 0 & YPLL_gp4 > 0 ~ 2,
+    YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 > 0 & YPLL_gp4 > 0 ~ 2,
+  # not gonna work like that
+    
+    gp4_age_2 >= 75 ~ 0,
+    gp4_age_2 < 75 ~ 75 - gp4_age_2),
+)
+d2 %>% filter(is.na(YPLL_gp4))
+summary(d2$YPLL_gp4)
 
     ####### PATIENCE SCORE
 
@@ -599,15 +624,24 @@ qqPlot(d2$look_after_health_x3) # also looks better graphically
 
     ## YPLL_sum var
 hist(d2$YPLL_sum) 
-skewness(d2$YPLL_sum) #1.58 --> highly positively skewed
+skewness(d2$YPLL_sum) #1.51 (before: 1.58) --> highly positively skewed
 d2$YPLL_sqrt <- transform(
   d2$YPLL_sum,
   method = "sqrt"
 )
-skewness(d2$YPLL_sqrt) #0.08, better
+skewness(d2$YPLL_sqrt) #0.03, better
 hist(d2$YPLL_sqrt)
-ggdensity(d2$YPLL_sqrt) # could honestly look better but can't find how
-qqPlot(d2$YPLL_sqrt)
+ggdensity(d2$YPLL_sqrt) # looks great!
+qqPlot(d2$YPLL_sqrt)    # amazing
+
+d2$YPLL_log <- transform(
+  d2$YPLL_sum,
+  method = "log+1"
+)
+skewness(d2$YPLL_log) #-0.9, small improvement
+hist(d2$YPLL_log) 
+ggdensity(d2$YPLL_log)  # still a lot of 0
+qqPlot(d2$YPLL_log)     # looks terrible
 
     ## age var
 class(d2$age)

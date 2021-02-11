@@ -39,17 +39,22 @@ sapply(d[cols.num],class)
 ######## Looking after health #######
 #####################################
 
+
 lm_health1 <- lm(scale(look_after_health_x3) ~ scale(YPLL_sqrt),data=d)
 summary(lm_health1)
 # Coefficients:
 #                     Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)       4.304e-17  4.196e-02   0.000   1.0000  
-# scale(YPLL_sqrt)  1.028e-01  4.200e-02   2.447   0.0147 *
-AIC(lm_health1) #1597
+# (Intercept)       0.006242   0.049631   0.126    0.900  
+# scale(YPLL_sqrt)  0.119114   0.049695   2.397    0.017 *
+AIC(lm_health1) #1597 before, 1106 after the correction of the YPLL_sum var
+
+lm_health_a <- lm(scale(look_after_health_x3) ~ n_deaths,data=d)
+summary(lm_health_a)
+AIC(lm_health_a) #1588, not as good
 
 lm_health2 <- glm(scale(look_after_health_x3) ~ scale(YPLL_sqrt) + age + gender + ethnicity,data=d)
 summary(lm_health2)
-# Coefficients:
+# Coefficients before YPLL_sum improvement:
 #                 Estimate Std. Error t value Pr(>|t|)    
 # (Intercept)    -0.115061   0.187430  -0.614  0.53954    
 # scale(YPLL_sqrt)0.052754   0.042980   1.227  0.22018    
@@ -61,9 +66,11 @@ summary(lm_health2)
 # ethnicityWhite -0.362045   0.158227  -2.288  0.02251 *
 # AIC: 1571
 
+# Afterwards, the gender effect disappears and the white ethnicity effect becomes stronger, and the AIC is lowered
+
 lm_health3 <- glm(scale(look_after_health_x3) ~ scale(YPLL_sqrt) + age + gender + ethnicity + scale(income_log) + SES_subj, data=d)
 summary(lm_health3)
-# Coefficients:
+# Coefficients before YPLL_sum improvement:
 #                   Estimate Std. Error t value Pr(>|t|)    
 # (Intercept)      -0.459702   0.240314  -1.913  0.05628 .  
 # scale(YPLL_sqrt)  0.063921   0.043143   1.482  0.13902    
@@ -75,12 +82,12 @@ summary(lm_health3)
 # ethnicityWhite   -0.345857   0.158418  -2.183  0.02944 *  
 # scale(income_log) 0.008156   0.044593   0.183  0.85495    
 # SES_subj          0.069104   0.027456   2.517  0.01212 * 
-# AIC = 1567
+# AIC = 1567 ; now 1087
 
 # The older ppl are, the more they look after their health: for one additional year, they take 0.01sd better care of their health
-# Man take 0.25 sd less care of their health
-# White ppl take 0.35 sd less care of their health
-# More affluent people take better care of their health (0.07 sd more for any increase in the 10-point social ladder)
+#The gender effect disappears after YPLL_sum var improvement
+# White ppl take 0.40 sd less care of their health (stronger than before)
+# More affluent people take better care of their health (0.08 sd more for any increase in the 10-point social ladder)
 
 lm_health4 <- glm(scale(look_after_health_x3) ~ scale(YPLL_sqrt) + age + gender + ethnicity + scale(income_log) + SES_subj + stress, data=d)
 summary(lm_health4)
@@ -97,7 +104,10 @@ summary(lm_health4)
 # scale(income_log)  0.002713   0.044113   0.061 0.950988    
 # SES_subj           0.049622   0.027651   1.795 0.073269 .  
 # stress            -0.134927   0.036464  -3.700 0.000237 ***
-# The more stressed people are, the less they take care of their health (0.13 sd less care for any increase in the 6-point stress scale)
+
+# With the YPLL_Sum correction, the gender effect loses its significance, 
+# ethnicity unchanged, subjective SES effect remains (beta=.05, p<.05),
+# the stress effect remains (beta = -.12, p<.01). AIC=1081
 
   ##### Does extrinsic mortality risk mediate the relationship between SES and looking after health? ####
 
@@ -115,6 +125,7 @@ summary(lm_SES_hb)
 # ethnicityWhite -0.358928   0.157269  -2.282  0.02285 * 
 # The subjective SES has a significant effect on looking after health, but the effect is very small:
 # For any increase in the 10-point social ladder, they take 0.07 sd better care of their health
+# Funny, there is a gender effect, but it disappears once YPLL_sum is added to the model
 
 lm_SES_extrinsic <- glm(scale(extrinsic_risk_sqrt) ~ SES_subj + age + gender + ethnicity, data=d)
 summary(lm_SES_extrinsic)
@@ -138,9 +149,9 @@ summary(lm_extrinsic_hb)
 # age                          0.011555   0.002589   4.463 9.80e-06 ***
 # genderMale                  -0.232688   0.080602  -2.887  0.00404 ** 
 # ethnicityBlack               0.148734   0.244016   0.610  0.54242    
-# ethnicityMixed -0.109815     0.287617  -0.382  0.70275    
-# ethnicityOther -0.225754     0.303753  -0.743  0.45767    
-# ethnicityWhite -0.308754     0.155782  -1.982  0.04798 *  
+# ethnicityMixed              -0.109815     0.287617  -0.382  0.70275    
+# ethnicityOther              -0.225754     0.303753  -0.743  0.45767    
+# ethnicityWhite              -0.308754     0.155782  -1.982  0.04798 *  
 
 lm_SES_hb <-glm(scale(look_after_health_x3) ~ SES_subj + age + gender+ ethnicity,data=d)
 summary(lm_SES_hb)
@@ -190,7 +201,7 @@ summary(lm_discounting1)
 # (Intercept)       1.856e-16  4.218e-02   0.000    1.000
 # scale(YPLL_sqrt) -9.000e-03  4.222e-02  -0.213    0.831
 
-# The nullest of the null results
+# The nullest of the null results. NOt drastically changes after YPLL_sum correction
 
 lm_discounting2 <- lm(scale(patience_score) ~ scale(YPLL_sqrt) + age + gender + ethnicity,data=d)
 summary(lm_discounting2)
@@ -205,7 +216,9 @@ summary(lm_discounting2)
 # ethnicityOther   0.026894   0.312421   0.086 0.931433    
 # ethnicityWhite  -0.099965   0.160331  -0.623 0.533216 
 
-# Well, the hypothesis is confirmed, at a p-value of .15. .30 with the Holm-Bonferroni correction.
+# After YPLL_sum correction, the YPLL_sum effect becomes stronger (0.09), marginally significant (p=0.08)
+# But not with the Holm-Bonferroni correction.
+# The gender and ethnicity effects disappear.
 
 lm_discounting3 <- lm(scale(patience_score) ~ scale(YPLL_sqrt) + age + gender + ethnicity + scale(income_log) + SES_subj,data=d)
 summary(lm_discounting3)
@@ -258,6 +271,14 @@ summary(lm_discounting5)
 # extrinsic_risk_sqrt -0.017760   0.019658  -0.903  0.36668 
 
 ### Even the extrinsic risk effect on delay discounting is absent!
+
+lm_discounting6 <- lm(scale(patience_score) ~ extrinsic_risk_sqrt + SES_subj,data=d)
+summary(lm_discounting6)
+# Coefficients:
+#                     Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)         -0.45335    0.18104  -2.504 0.012559 *  
+# extrinsic_risk_sqrt -0.02115    0.01946  -1.087 0.277579    
+# SES_subj             0.09775    0.02633   3.713 0.000225 ***
 
 #################################
 ###### Secondary analyses #######
