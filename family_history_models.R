@@ -136,6 +136,18 @@ summary(lm_health4)
 # ethnicity unchanged, subjective SES effect remains (beta=.05, p<.05),
 # the stress effect remains (beta = -.12, p<.01). AIC=1081
 
+lm_health_n_premdeaths1 <- lm(scale(look_after_health_x3) ~ prem_sum,data=d)
+summary(lm_health_n_premdeaths1)
+
+lm_health_n_premdeaths2 <- lm(scale(look_after_health_x3) ~ prem_sum + age + gender + ethnicity,data=d)
+summary(lm_health_n_premdeaths2)
+
+lm_health_n_premdeaths3 <- lm(scale(look_after_health_x3) ~ prem_sum + age + gender + ethnicity + income_log + SES_subj,data=d)
+summary(lm_health_n_premdeaths3)
+
+lm_health_n_premdeaths4 <- lm(scale(look_after_health_x3) ~ prem_sum + age + gender + ethnicity + income_log + SES_subj + stress,data=d)
+summary(lm_health_n_premdeaths4)
+
   ##### Does extrinsic mortality risk mediate the relationship between SES and looking after health? ####
 
 lm_SES_hb <-glm(scale(look_after_health_x3) ~ SES_subj + age + gender + ethnicity, data=d)

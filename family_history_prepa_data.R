@@ -507,36 +507,35 @@ summary(d2$n_deaths)
 ggdensity(d2$n_deaths)
 
   ### Creation of sum of premature deaths within the family
-# d2 <- d2 %>% mutate(
-#   n_prem_deaths = case_when(
-#     YPLL_p1 >0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 1,
-#     YPLL_p1 ==0 & YPLL_p2 >0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 1,
-#     YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 > 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 1,
-#     YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 > 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 1,
-#     YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 > 0 & YPLL_gp4 == 0 ~ 1,
-#     YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 > 0 ~ 1,
-#     YPLL_p1 >0 & YPLL_p2 >0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
-#     YPLL_p1 >0 & YPLL_p2 ==0 & YPLL_gp1 > 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
-#     YPLL_p1 >0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 > 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
-#     YPLL_p1 >0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 > 0 & YPLL_gp4 == 0 ~ 2,
-#     YPLL_p1 >0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 > 0 ~ 2,
-#     YPLL_p1 ==0 & YPLL_p2 >0 & YPLL_gp1 > 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
-#     YPLL_p1 ==0 & YPLL_p2 >0 & YPLL_gp1 == 0 & YPLL_gp2 > 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
-#     YPLL_p1 ==0 & YPLL_p2 >0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 > 0 & YPLL_gp4 == 0 ~ 2,
-#     YPLL_p1 ==0 & YPLL_p2 >0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 > 0 ~ 2,
-#     YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 > 0 & YPLL_gp2 > 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
-#     YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 > 0 & YPLL_gp2 == 0 & YPLL_gp3 > 0 & YPLL_gp4 == 0 ~ 2,
-#     YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 > 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 > 0 ~ 2,
-#     YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 > 0 & YPLL_gp3 > 0 & YPLL_gp4 == 0 ~ 2,
-#     YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 > 0 & YPLL_gp3 == 0 & YPLL_gp4 > 0 ~ 2,
-#     YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 > 0 & YPLL_gp4 > 0 ~ 2,
-#   # not gonna work like that
-#     
-#     gp4_age_2 >= 75 ~ 0,
-#     gp4_age_2 < 75 ~ 75 - gp4_age_2),
-# )
-# d2 %>% filter(is.na(YPLL_gp4))
-# summary(d2$YPLL_gp4)
+d2 <- d2 %>% mutate(
+  p1_prem = case_when(
+    YPLL_p1 > 0 ~ 1,
+    YPLL_p1 == 0 ~ 0),
+  p2_prem = case_when(
+    YPLL_p2 > 0 ~ 1,
+    YPLL_p2 == 0 ~ 0),
+  gp1_prem = case_when(
+    YPLL_gp1 > 0 ~ 1,
+    YPLL_gp1 == 0 ~ 0),
+  gp2_prem = case_when(
+    YPLL_gp2 > 0 ~ 1,
+    YPLL_gp2 == 0 ~ 0),
+  gp3_prem = case_when(
+    YPLL_gp3 > 0 ~ 1,
+    YPLL_gp3 == 0 ~ 0),
+  gp4_prem = case_when(
+    YPLL_gp4 > 0 ~ 1,
+    YPLL_gp4 == 0 ~ 0),
+)
+summary(d2$p1_prem)
+summary(d2$p2_prem)
+
+d2 <- d2 %>% mutate(
+  prem_sum = p1_prem + p2_prem + gp1_prem + gp2_prem + gp3_prem + gp4_prem
+)
+summary(d2$prem_sum)
+#     Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+#   0.000   1.000   2.000   2.239   3.000   6.000     170
 
     ####### PATIENCE SCORE
 
