@@ -1,6 +1,6 @@
 # Data analysis script for 'Premature mortality and timing of your life: An exploratory correlational study'
 # Mona Joly and colleagues
-# 10/02/21
+# 12/02/21
 
 rm(list=ls())
 #install.packages("tidyverse")
@@ -29,6 +29,7 @@ lapply(d, class)
 cols.num <- c("look_after_health_x2","YPLL_sqrt","income_sqrt","income_log","extrinsic_risk_sqrt","age_child1_sqrt")
 d[cols.num] <- sapply(d[cols.num],as.numeric)
 d$patience_score_bi <- as.factor(d$patience_score_bi)
+d$YPLL_dummy <- as.factor(d$YPLL_dummy)
 sapply(d[cols.num],class)
 
 ################################
@@ -48,6 +49,16 @@ summary(lm_health1)
 # scale(YPLL_sqrt)  0.119114   0.049695   2.397    0.017 *
 AIC(lm_health1) #1597 before, 1106 after the correction of the YPLL_sum var
 
+lm_health_dummy1 <- lm(scale(look_after_health_x3) ~ scale(YPLL_sqrt) + YPLL_dummy,data=d)
+summary(lm_health_dummy1)
+# Coefficients:
+#                   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)       -0.02483    0.16976  -0.146   0.8838  
+# scale(YPLL_sqrt)   0.11054    0.06694   1.651   0.0995 .
+# YPLL_dummy1        0.03634    0.18986   0.191   0.8483
+# doesn't help
+AIC(lm_health_dummy1) #1108 --> no improvement from the previous model
+
 lm_health_a <- lm(scale(look_after_health_x3) ~ n_deaths,data=d)
 summary(lm_health_a)
 AIC(lm_health_a) #1588, not as good
@@ -64,9 +75,25 @@ summary(lm_health2)
 # ethnicityMixed -0.188880   0.292285  -0.646  0.51840    
 # ethnicityOther -0.335652   0.308322  -1.089  0.27679    
 # ethnicityWhite -0.362045   0.158227  -2.288  0.02251 *
-# AIC: 1571
+# AIC: 1571 --> new: 1092
 
-# Afterwards, the gender effect disappears and the white ethnicity effect becomes stronger, and the AIC is lowered
+# Afterwards, the gender effect disappears and the white ethnicity effect becomes stronger
+
+lm_health_dummy2 <- glm(scale(look_after_health_x3) ~ scale(YPLL_sqrt) + YPLL_dummy + age + gender + ethnicity,data=d)
+summary(lm_health_dummy2)
+# Coefficients:
+#                   Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)      -0.14368    0.25036  -0.574 0.566383    
+# scale(YPLL_sqrt)  0.04925    0.06804   0.724 0.469562    
+# YPLL_dummy1       0.02812    0.18869   0.149 0.881616    
+# age               0.01230    0.00326   3.773 0.000187 ***
+# genderMale       -0.08723    0.09795  -0.891 0.373686    
+# ethnicityBlack    0.14347    0.35290   0.407 0.684565    
+# ethnicityMixed   -0.11127    0.33922  -0.328 0.743070    
+# ethnicityOther   -0.25651    0.35044  -0.732 0.464641    
+# ethnicityWhite   -0.43619    0.18231  -2.393 0.017212 * 
+# AIC: 1094
+# slightly diminishes the effect of YPLL_sum, so definitely doesn't help. Plus increases the AIC.
 
 lm_health3 <- glm(scale(look_after_health_x3) ~ scale(YPLL_sqrt) + age + gender + ethnicity + scale(income_log) + SES_subj, data=d)
 summary(lm_health3)

@@ -481,7 +481,7 @@ summary(d2$YPLL_gp4)
 #     Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
 #     0.00    0.00    0.00    3.74    2.00   51.00      90
 
-  ### Creation of sum of YPLL var - only works without NA
+  ### Creation of sum of YPLL var
 d2 <- d2 %>% mutate(
   YPLL_sum = YPLL_p1 + YPLL_p2 + YPLL_gp1 + YPLL_gp2 + YPLL_gp3 + YPLL_gp4
 )
@@ -489,6 +489,14 @@ d2 %>% filter(is.na(YPLL_sum))
 summary(d2$YPLL_sum)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
 # 0.00    9.00   27.00   34.08   50.00  208.00     170 
+
+  ### Creation of a dummy YPLL_sum var
+d2 <- d2 %>% mutate(
+  YPLL_dummy = case_when(
+    YPLL_sum == 0 ~ 0,
+    YPLL_sum > 0 ~ 1),
+)
+summary(d2$YPLL_dummy)
 
   ### Creation of sum of deaths in the family
 d2 <- d2 %>% mutate(
@@ -499,36 +507,36 @@ summary(d2$n_deaths)
 ggdensity(d2$n_deaths)
 
   ### Creation of sum of premature deaths within the family
-d2 <- d2 %>% mutate(
-  n_prem_deaths = case_when(
-    YPLL_p1 >0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 1,
-    YPLL_p1 ==0 & YPLL_p2 >0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 1,
-    YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 > 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 1,
-    YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 > 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 1,
-    YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 > 0 & YPLL_gp4 == 0 ~ 1,
-    YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 > 0 ~ 1,
-    YPLL_p1 >0 & YPLL_p2 >0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
-    YPLL_p1 >0 & YPLL_p2 ==0 & YPLL_gp1 > 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
-    YPLL_p1 >0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 > 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
-    YPLL_p1 >0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 > 0 & YPLL_gp4 == 0 ~ 2,
-    YPLL_p1 >0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 > 0 ~ 2,
-    YPLL_p1 ==0 & YPLL_p2 >0 & YPLL_gp1 > 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
-    YPLL_p1 ==0 & YPLL_p2 >0 & YPLL_gp1 == 0 & YPLL_gp2 > 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
-    YPLL_p1 ==0 & YPLL_p2 >0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 > 0 & YPLL_gp4 == 0 ~ 2,
-    YPLL_p1 ==0 & YPLL_p2 >0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 > 0 ~ 2,
-    YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 > 0 & YPLL_gp2 > 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
-    YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 > 0 & YPLL_gp2 == 0 & YPLL_gp3 > 0 & YPLL_gp4 == 0 ~ 2,
-    YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 > 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 > 0 ~ 2,
-    YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 > 0 & YPLL_gp3 > 0 & YPLL_gp4 == 0 ~ 2,
-    YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 > 0 & YPLL_gp3 == 0 & YPLL_gp4 > 0 ~ 2,
-    YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 > 0 & YPLL_gp4 > 0 ~ 2,
-  # not gonna work like that
-    
-    gp4_age_2 >= 75 ~ 0,
-    gp4_age_2 < 75 ~ 75 - gp4_age_2),
-)
-d2 %>% filter(is.na(YPLL_gp4))
-summary(d2$YPLL_gp4)
+# d2 <- d2 %>% mutate(
+#   n_prem_deaths = case_when(
+#     YPLL_p1 >0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 1,
+#     YPLL_p1 ==0 & YPLL_p2 >0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 1,
+#     YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 > 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 1,
+#     YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 > 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 1,
+#     YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 > 0 & YPLL_gp4 == 0 ~ 1,
+#     YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 > 0 ~ 1,
+#     YPLL_p1 >0 & YPLL_p2 >0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
+#     YPLL_p1 >0 & YPLL_p2 ==0 & YPLL_gp1 > 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
+#     YPLL_p1 >0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 > 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
+#     YPLL_p1 >0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 > 0 & YPLL_gp4 == 0 ~ 2,
+#     YPLL_p1 >0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 > 0 ~ 2,
+#     YPLL_p1 ==0 & YPLL_p2 >0 & YPLL_gp1 > 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
+#     YPLL_p1 ==0 & YPLL_p2 >0 & YPLL_gp1 == 0 & YPLL_gp2 > 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
+#     YPLL_p1 ==0 & YPLL_p2 >0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 > 0 & YPLL_gp4 == 0 ~ 2,
+#     YPLL_p1 ==0 & YPLL_p2 >0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 > 0 ~ 2,
+#     YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 > 0 & YPLL_gp2 > 0 & YPLL_gp3 == 0 & YPLL_gp4 == 0 ~ 2,
+#     YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 > 0 & YPLL_gp2 == 0 & YPLL_gp3 > 0 & YPLL_gp4 == 0 ~ 2,
+#     YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 > 0 & YPLL_gp2 == 0 & YPLL_gp3 == 0 & YPLL_gp4 > 0 ~ 2,
+#     YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 > 0 & YPLL_gp3 > 0 & YPLL_gp4 == 0 ~ 2,
+#     YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 > 0 & YPLL_gp3 == 0 & YPLL_gp4 > 0 ~ 2,
+#     YPLL_p1 ==0 & YPLL_p2 ==0 & YPLL_gp1 == 0 & YPLL_gp2 == 0 & YPLL_gp3 > 0 & YPLL_gp4 > 0 ~ 2,
+#   # not gonna work like that
+#     
+#     gp4_age_2 >= 75 ~ 0,
+#     gp4_age_2 < 75 ~ 75 - gp4_age_2),
+# )
+# d2 %>% filter(is.na(YPLL_gp4))
+# summary(d2$YPLL_gp4)
 
     ####### PATIENCE SCORE
 
@@ -605,7 +613,15 @@ d2$Q31 <- NULL
 
     ## Look_after_health var
 hist(d2$look_after_health)
+ggdensity(d2$look_after_health)
+qqPlot(d2$look_after_health)
 skewness(d2$look_after_health) #-1.28 --> highly negatively skewed
+hist(log(max(d2$look_after_health)-d2$look_after_health+1))
+ggdensity(log(max(d2$look_after_health)-d2$look_after_health+1))
+d2$look_after_health_new <- log(max(d2$look_after_health)-d2$look_after_health+1)
+skewness(d2$look_after_health_new)
+qqPlot(d2$look_after_health_new)
+d2$look_after_health_new
 
 d2$look_after_health_x2 <- transform(
   d2$look_after_health,
@@ -621,6 +637,7 @@ hist(d2$look_after_health_x3)
 skewness(d2$look_after_health_x3) #0.18 the best
 ggdensity(d2$look_after_health_x3)
 qqPlot(d2$look_after_health_x3) # also looks better graphically
+
 
     ## YPLL_sum var
 hist(d2$YPLL_sum) 
@@ -685,6 +702,13 @@ d2$extrinsic_risk_sqrt <- transform(
   d2$extrinsic_risk,
   method = "sqrt"
 )
+d2$extrinsic_risk_log <- transform(
+  d2$extrinsic_risk,
+  method = "log+1"
+)
+ggdensity(d2$extrinsic_risk_log)
+ggdensity(d2$extrinsic_risk_sqrt)
+skewness(d2$extrinsic_risk_log)
 
     ## Patience score var
 hist(d2$patience_score) 
