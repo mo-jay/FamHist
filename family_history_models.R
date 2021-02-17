@@ -39,6 +39,7 @@ cols.num <- c("look_after_health_x2","YPLL_sqrt","income_sqrt","income_log","ext
 d[cols.num] <- sapply(d[cols.num],as.numeric)
 d$patience_score_bi <- as.factor(d$patience_score_bi)
 d$YPLL_dummy <- as.factor(d$YPLL_dummy)
+d$checkup <- as.factor(d$checkup)
 sapply(d[cols.num],class)
 
 d3 <- d %>% filter(YPLL_sum < mean(YPLL_sum, na.rm = TRUE) + 2*sd(YPLL_sum,na.rm=TRUE)) 

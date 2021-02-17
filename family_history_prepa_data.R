@@ -1,7 +1,7 @@
 # Preparation of the data from the study 'Premature mortality and timing of your life: 
 # An exploratory correlational study' for analysis
 # Mona Joly and colleagues
-# 16/02/21
+# 17/02/21
 
 rm(list=ls())
 #install.packages("tidyverse")
@@ -231,20 +231,32 @@ table(d2$gender)
 
   ### Recoding of checkup - maybe choose a number lower than the maximum of the given range?
 table(d2$checkup)
+class(d2$checkup)
+### Checkup
+# 215/551 (39%) had their last checkup within a year.
+# 353/582 (64%) within the last 2 years
+# 198 (36%) in a longer time
+# d2 <- d2 %>% mutate(
+#   checkup = case_when(
+#     checkup == "Within the past year" ~ 0.5,
+#     checkup == "Within the last 2 years" ~ 1.5,
+#     checkup == "Within the last 3 years" ~ 2.5,
+#     checkup == "Within the last 5 years" ~ 4,
+#     checkup == "Within the last 10 years" ~ 7.5,
+#     checkup == "10 years ago or more" ~ 12),
+# )
 d2 <- d2 %>% mutate(
   checkup = case_when(
-    checkup == "Within the past year" ~ 1,
-    checkup == "Within the last 2 years" ~ 2,
-    checkup == "Within the last 3 years" ~ 3,
-    checkup == "Within the last 5 years" ~ 5,
-    checkup == "Within the last 10 years" ~ 10,
-    checkup == "10 years ago or more" ~ 15),
+    checkup =="Within the last 3 years" | checkup == "Within the last 5 years" | 
+      checkup =="Within the last 10 years" | checkup == "10 years ago or more" ~ "2 years ago or more",
+    checkup == "Don't know" | checkup == "Rather not say" ~ NA_character_,
+    TRUE ~ as.character(checkup)),
 )
-d2$checkup <- as.numeric(d2$checkup)
+#d2$checkup <- as.numeric(d2$checkup)
 table(d2$checkup)
-summary(d2$checkup)
-#     Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-#   1.000   1.000   2.000   3.827   5.000  15.000      26 
+# d2$checkup <- as.factor(d2$checkup)
+# 2 years ago or more Within the last 2 years    Within the past year 
+# 198                     138                     215
 
   ### Recoding of smoker status
 table(d2$smoker)
@@ -309,6 +321,20 @@ d2 <- d2 %>% mutate(
     TRUE ~ as.numeric(breastfeed_length)),
 )
 d2$breastfeed_length <- as.numeric(d2$breastfeed_length)
+summary(d2$breastfeed_length)
+count(d2 %>% filter(breastfeed_length ==0))/(582-402) # 34% didn't exclusively breastfeed their 1st child at all
+count(d2 %>% filter(breastfeed_length > 0 & breastfeed_length < 6))/(582-402) #28% exclusively breastfed their child for less than 6 months
+count(d2 %>% filter(breastfeed_length >= 6))/(582-402) # 37% breastfed their 1st child for 6 months or more
+
+d2 <- d2 %>% mutate(
+  breastfeed_length = case_when(
+    breastfeed_length ==0 ~ "No breastfeeding",
+    breastfeed_length > 0 & breastfeed_length < 6 ~ "Less than 6 months",
+    breastfeed_length >= 6 ~ "6 months or more"),
+)
+table(d2$breastfeed_length)
+# 6 months or more Less than 6 months   No breastfeeding 
+#               67                 51                 62
 
   ### Recoding of ideal age var for participants w/o children
 # table(d2$ideal_age)
@@ -493,9 +519,7 @@ d2 <- d2 %>% mutate(
 d2 %>% filter(is.na(YPLL_sum))
 summary(d2$YPLL_sum)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-# 0.00    9.00   27.00   34.08   50.00  208.00     170 
-d2 %>% filter(YPLL_sum > mean(d2$YPLL_sum, na.rm = TRUE) + 2*sd(d2$YPLL_sum,na.rm=TRUE)) # removes 14 participants with a YPLL_sum > 121,8
-          # equivalent of having all relatives who died before the age of 55
+# 0.00    9.00   28.00   37.04   50.75  334.00     184  
 
   ### Creation of a dummy YPLL_sum var
 d2 <- d2 %>% mutate(
@@ -617,6 +641,11 @@ d2$Q31 <- NULL
 
   #### Data transformations ####
 
+d3 <- d2 %>% filter(YPLL_sum < mean(d2$YPLL_sum, na.rm = TRUE) + 2*sd(d2$YPLL_sum,na.rm=TRUE)) 
+# removes 14 participants with a YPLL_sum > 121,8
+# equivalent of having all relatives who died before the age of 55
+# also removes the 184 NA --> 384 left
+
     ## Look_after_health var
 hist(d2$look_after_health)
 ggdensity(d2$look_after_health)
@@ -624,47 +653,69 @@ qqPlot(d2$look_after_health)
 skewness(d2$look_after_health) #-1.28 --> highly negatively skewed
 hist(log(max(d2$look_after_health)-d2$look_after_health+1))
 ggdensity(log(max(d2$look_after_health)-d2$look_after_health+1))
-d2$look_after_health_new <- log(max(d2$look_after_health)-d2$look_after_health+1)
-skewness(d2$look_after_health_new)
-qqPlot(d2$look_after_health_new)
-d2$look_after_health_new
+d2$look_after_health_log <- log(max(d2$look_after_health)-d2$look_after_health+1)
+skewness(d2$look_after_health_log)
+qqPlot(d2$look_after_health_log)
 
-d2$look_after_health_x2 <- transform(
-  d2$look_after_health,
-  method = "x^2")
-hist(d2$look_after_health_x2)
-skewness(d2$look_after_health_x2) #-0.38
-ggdensity(d2$look_after_health_x2)
-qqPlot(d2$look_after_health_x2)
-d2$look_after_health_x3 <- transform(
-  d2$look_after_health,
-  method = "x^3")
-hist(d2$look_after_health_x3)
-skewness(d2$look_after_health_x3) #0.18 the best
-ggdensity(d2$look_after_health_x3)
-qqPlot(d2$look_after_health_x3) # also looks better graphically
+# d2$look_after_health_sqrt <- transform(
+#   d2$look_after_health,
+#   method = "log")
+# hist(d2$look_after_health_sqrt)
+# skewness(d2$look_after_health_x2) #-0.38
+# ggdensity(d2$look_after_health_x2)
+# qqPlot(d2$look_after_health_x2)
+# d2$look_after_health_x3 <- transform(
+#   d2$look_after_health,
+#   method = "x^3")
+# hist(d2$look_after_health_x3)
+# skewness(d2$look_after_health_x3) #0.18 the best
+# ggdensity(d2$look_after_health_x3)
+# qqPlot(d2$look_after_health_x3) # also looks better graphically
 
 
     ## YPLL_sum var
-hist(d2$YPLL_sum) 
-skewness(d2$YPLL_sum) #1.51 (before: 1.58) --> highly positively skewed
-d2$YPLL_sqrt <- transform(
-  d2$YPLL_sum,
-  method = "sqrt"
-)
-skewness(d2$YPLL_sqrt) #0.03, better
-hist(d2$YPLL_sqrt)
-ggdensity(d2$YPLL_sqrt) # looks great!
-qqPlot(d2$YPLL_sqrt)    # amazing
+# hist(d2$YPLL_sum) 
+# skewness(d2$YPLL_sum) #1.51 (before: 1.58) --> highly positively skewed
+# hist(d3$YPLL_sum)
+# d2$YPLL_sqrt <- transform(
+#   d2$YPLL_sum,
+#   method = "sqrt"
+# )
+# skewness(d2$YPLL_sqrt) #0.03, better
+# hist(d2$YPLL_sqrt)
+# ggdensity(d2$YPLL_sqrt) # looks great!
+# qqPlot(d2$YPLL_sqrt)    # amazing
+# 
+# d3$YPLL_sqrt <- transform(
+#   d3$YPLL_sum,
+#   method = "sqrt"
+# )
+# skewness(d3$YPLL_sqrt) #0.03, better
+# hist(d3$YPLL_sqrt)
+# ggdensity(d3$YPLL_sqrt) # looks great!
+# qqPlot(d3$YPLL_sqrt)    # amazing
+# 
+# d2$YPLL_log <- transform(
+#   d2$YPLL_sum,
+#   method = "log+1"
+# )
+# skewness(d2$YPLL_log) #-0.9, small improvement
+# hist(d2$YPLL_log) 
+# ggdensity(d2$YPLL_log)  # still a lot of 0
+# qqPlot(d2$YPLL_log)     # looks terrible
+# 
+# d3$YPLL_log <- transform(
+#   d3$YPLL_sum,
+#   method = "log+1"
+# )
+# skewness(d3$YPLL_log) #-0.9, small improvement
+# hist(d3$YPLL_log) 
+# ggdensity(d3$YPLL_log)  # still a lot of 0
+# qqPlot(d3$YPLL_log)     # looks terrible
+# hist(log(max(d3$YPLL_sum)-d3$YPLL_sum+1))
 
-d2$YPLL_log <- transform(
-  d2$YPLL_sum,
-  method = "log+1"
-)
-skewness(d2$YPLL_log) #-0.9, small improvement
-hist(d2$YPLL_log) 
-ggdensity(d2$YPLL_log)  # still a lot of 0
-qqPlot(d2$YPLL_log)     # looks terrible
+#### For YPLL_sum, the best is to sqrt. Log+1 provides a little improvement.
+#### Better to only use d3 for models with YPLL_sum bc of the crazy outliers
 
     ## age var
 class(d2$age)
@@ -678,21 +729,21 @@ hist(d2$personal_income)
 skewness(d2$personal_income) #1.44
 ggdensity(d2$personal_income)
 
-d2$income_sqrt <- transform(
-  d2$personal_income,
-  method = "sqrt"
-)
-skewness(d2$income_sqrt) #0.4
-ggdensity(d2$income_sqrt)
-qqPlot(d2$income_sqrt) # Not bad
-
-d2$income_log <- transform(
-  d2$personal_income,
-  method = "log"
-)
-skewness(d2$income_log) #-0.52
-ggdensity(d2$income_log)
-qqPlot(d2$income_log) # hard to say which is best
+# d2$income_sqrt <- transform(
+#   d2$personal_income,
+#   method = "sqrt"
+# )
+# skewness(d2$income_sqrt) #0.4
+# ggdensity(d2$income_sqrt)
+# qqPlot(d2$income_sqrt) # Not bad
+# 
+# d2$income_log <- transform(
+#   d2$personal_income,
+#   method = "log"
+# )
+# skewness(d2$income_log) #-0.52
+# ggdensity(d2$income_log)
+qqPlot(d2$income_log) # log is fine, let's use this one
 
     ## Subjective SES var
 skewness(d2$SES_subj)
@@ -701,20 +752,27 @@ qqPlot(d2$SES_subj) # Not that bad? Transformations do not help anyway
 
     ## Extrinsic risk var
 hist(d2$extrinsic_risk)
-skewness(sqrt(d2$extrinsic_risk))
-ggdensity(sqrt(d2$extrinsic_risk))
-qqPlot(sqrt(d2$extrinsic_risk))
-d2$extrinsic_risk_sqrt <- transform(
-  d2$extrinsic_risk,
-  method = "sqrt"
-)
-d2$extrinsic_risk_log <- transform(
-  d2$extrinsic_risk,
-  method = "log+1"
-)
-ggdensity(d2$extrinsic_risk_log)
-ggdensity(d2$extrinsic_risk_sqrt)
-skewness(d2$extrinsic_risk_log)
+skewness(d2$extrinsic_risk)
+# skewness(sqrt(d3$extrinsic_risk))
+# skewness(log(d3$extrinsic_risk+1))
+# ggdensity(sqrt(d2$extrinsic_risk))
+# qqPlot(sqrt(d2$extrinsic_risk))
+# d2$extrinsic_risk_sqrt <- transform(
+#   d2$extrinsic_risk,
+#   method = "sqrt"
+# )
+# d2$extrinsic_risk_log <- transform(
+#   d2$extrinsic_risk,
+#   method = "log+1"
+# )
+# ggdensity(d2$extrinsic_risk_log)
+# ggdensity(d2$extrinsic_risk_sqrt)
+# skewness(d2$extrinsic_risk_log)
+# hist(d2$extrinsic_risk_log)
+# hist(d2$extrinsic_risk_sqrt)
+
+# The skewness of extrinsic_var is terrible with log. But graphically it looks
+# just as fine as sqrt.
 
     ## Patience score var
 hist(d2$patience_score) 
@@ -727,21 +785,28 @@ d2 <- d2 %>% mutate(
 ) 
 d2$patience_score_bi <- as.factor(d2$patience_score_bi)
 summary(d2$patience_score_bi)
+# high  low 
+# 301  281
 plot(d2$patience_score_bi)
 
     ### Age 1st child var
-ggdensity(d2$age_first_child) #positively skewed
+ggdensity(d2$age_first_child) #positively skewed. It's fine though
+hist(d2$age_first_child)
 skewness(d2$age_first_child)  #0.25
-d2$age_child1_sqrt <- transform(
-  d2$age_first_child,
-  method = "sqrt"
-)
-ggdensity(d2$age_child1_sqrt)
-skewness(d2$age_child1_sqrt) #-0.08
+# d2$age_child1_sqrt <- transform(
+#   d2$age_first_child,
+#   method = "sqrt"
+# )
+# ggdensity(d2$age_child1_sqrt)
+# skewness(d2$age_child1_sqrt) #-0.08
 
     ### Ideal age var
 ggdensity(d2$ideal_age) #good
 skewness(d2$ideal_age)  #0.15
+
+    ### Green behaviour
+hist(d2$environment_1) # negatively skewed, but fine
+hist(d2$env_transport) # quite uniform. Maybe bimodal
 
 ###################################################
 ######### Creation of the final data table ########
