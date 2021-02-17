@@ -1,24 +1,33 @@
 # Data analysis script for 'Premature mortality and timing of your life: An exploratory correlational study'
 # Mona Joly and colleagues
-# 12/02/21
+# 16/02/21
 
 rm(list=ls())
 #install.packages("tidyverse")
-#install.packages("tidylog")
-#install.packages("rmarkdown")
-# install.packages("multilevel")
-# install.packages("bda")
-# install.packages("lme4")
+if(!require(tidyverse)) install.packages("tidyverse")
+if(!require(tidyverse)) install.packages("tidylog")
+if(!require(tidyverse)) install.packages("rmarkdown")
+if(!require(tidyverse)) install.packages("multilevel")
+if(!require(tidyverse)) install.packages("bda")
+if(!require(tidyverse)) install.packages("lme4")
+if(!require(sjlabelled)) install.packages("sjlabelled")
+if(!require(sjmisc)) install.packages("sjmisc")
+if(!require(sjstats)) install.packages("sjstats")
+if(!require(ggeffects)) install.packages("ggeffects")
+if(!require(sjPlot)) install.packages("sjPlot")
+if(!require(effects)) install.packages("effects")
 library(tidyverse)
 library(tidylog)
 library(rmarkdown)
 # library(e1071)      # to calculate skewness
 # library(dlookr)     # to transform data
 # library(ggpubr)     # for density plots
-# library(car)        # for qqPlots
+library(car)        # for qqPlots
 library(multilevel) # for sobel test
 library(bda)        # another way to calculate mediation
 # library(lme4)
+library(effects)
+library(sjPlot)
 
 # setwd("/Users/monou/Nextcloud/Family history questionnaire/Data analysis") # Mac France Mona
 # setwd("/Users/Monouille/Nextcloud/Shared/HSI/Family history questionnaire/Data analysis/FamHist") # Macbook Mona
@@ -32,6 +41,9 @@ d$patience_score_bi <- as.factor(d$patience_score_bi)
 d$YPLL_dummy <- as.factor(d$YPLL_dummy)
 sapply(d[cols.num],class)
 
+d3 <- d %>% filter(YPLL_sum < mean(YPLL_sum, na.rm = TRUE) + 2*sd(YPLL_sum,na.rm=TRUE)) 
+# d4 <- d3%>% filter(age > 30)
+
 ################################
 ######## MAIN ANALYSIS #########
 ################################
@@ -40,16 +52,23 @@ sapply(d[cols.num],class)
 ######## Looking after health #######
 #####################################
 
-
-lm_health1 <- lm(scale(look_after_health_x3) ~ scale(YPLL_sqrt),data=d)
+lm_health1 <- lm(scale(look_after_health_x3) ~ scale(YPLL_sqrt),data=d4)
 summary(lm_health1)
 # Coefficients:
 #                     Estimate Std. Error t value Pr(>|t|)    
 # (Intercept)       0.006242   0.049631   0.126    0.900  
 # scale(YPLL_sqrt)  0.119114   0.049695   2.397    0.017 *
 AIC(lm_health1) #1597 before, 1106 after the correction of the YPLL_sum var
+fig1 = ggplot(d4, aes(x=YPLL_sum, y=look_after_health)) + 
+  theme_bw() + 
+  geom_point() + 
+  geom_smooth(method="lm") +
+  #facet_wrap(~gender) +
+  xlab("YPLL sum") + 
+  ylab("Effort in looking after health")
+fig1
 
-lm_health_dummy1 <- lm(scale(look_after_health_x3) ~ scale(YPLL_sqrt) + YPLL_dummy,data=d)
+lm_health_dummy1 <- lm(scale(look_after_health_x3) ~ scale(YPLL_sqrt) + YPLL_dummy,data=d4)
 summary(lm_health_dummy1)
 # Coefficients:
 #                   Estimate Std. Error t value Pr(>|t|)    
@@ -59,11 +78,7 @@ summary(lm_health_dummy1)
 # doesn't help
 AIC(lm_health_dummy1) #1108 --> no improvement from the previous model
 
-lm_health_a <- lm(scale(look_after_health_x3) ~ n_deaths,data=d)
-summary(lm_health_a)
-AIC(lm_health_a) #1588, not as good
-
-lm_health2 <- glm(scale(look_after_health_x3) ~ scale(YPLL_sqrt) + age + gender + ethnicity,data=d)
+lm_health2 <- glm(scale(look_after_health_x3) ~ scale(YPLL_sqrt) + age + gender + ethnicity,data=d4)
 summary(lm_health2)
 # Coefficients before YPLL_sum improvement:
 #                 Estimate Std. Error t value Pr(>|t|)    
@@ -79,7 +94,16 @@ summary(lm_health2)
 
 # Afterwards, the gender effect disappears and the white ethnicity effect becomes stronger
 
-lm_health_dummy2 <- glm(scale(look_after_health_x3) ~ scale(YPLL_sqrt) + YPLL_dummy + age + gender + ethnicity,data=d)
+fig2 = ggplot(d3, aes(x=YPLL_sum, y=look_after_health)) + 
+  theme_bw() + 
+  geom_point() + 
+  geom_smooth(method="lm") +
+  facet_wrap(~gender) +
+  xlab("YPLL sum") + 
+  ylab("Effort in looking after health")
+fig2
+
+lm_health_dummy2 <- glm(scale(look_after_health_x3) ~ scale(YPLL_sqrt) + YPLL_dummy + age + gender + ethnicity,data=d4)
 summary(lm_health_dummy2)
 # Coefficients:
 #                   Estimate Std. Error t value Pr(>|t|)    
@@ -95,7 +119,7 @@ summary(lm_health_dummy2)
 # AIC: 1094
 # slightly diminishes the effect of YPLL_sum, so definitely doesn't help. Plus increases the AIC.
 
-lm_health3 <- glm(scale(look_after_health_x3) ~ scale(YPLL_sqrt) + age + gender + ethnicity + scale(income_log) + SES_subj, data=d)
+lm_health3 <- glm(scale(look_after_health_x3) ~ scale(YPLL_sqrt) + age + gender + ethnicity + scale(income_log) + SES_subj, data=d4)
 summary(lm_health3)
 # Coefficients before YPLL_sum improvement:
 #                   Estimate Std. Error t value Pr(>|t|)    
@@ -136,19 +160,154 @@ summary(lm_health4)
 # ethnicity unchanged, subjective SES effect remains (beta=.05, p<.05),
 # the stress effect remains (beta = -.12, p<.01). AIC=1081
 
+##############################
+####### PATIENCE SCORE #######
+##############################
+
+lm_discounting1 <- lm(scale(patience_score) ~ scale(YPLL_sqrt),data=d4)
+summary(lm_discounting1)
+# Coefficients:
+#                   Estimate Std. Error t value Pr(>|t|)
+# (Intercept)       1.856e-16  4.218e-02   0.000    1.000
+# scale(YPLL_sqrt) -9.000e-03  4.222e-02  -0.213    0.831
+
+# The nullest of the null results. No drastical changes after YPLL_sum correction
+
+fig3 = ggplot(d4, aes(x=YPLL_sum, y=patience_score)) + 
+  theme_bw() + 
+  geom_point() + 
+  geom_smooth(method="lm") +
+  facet_wrap(~gender) +
+  xlab("YPLL sum") + 
+  ylab("Patience score")
+fig3
+
+lm_discounting2 <- lm(scale(patience_score) ~ scale(YPLL_sqrt)*gender + age + ethnicity,data=d)
+summary(lm_discounting2)
+# Coefficients:
+#                  Estimate Std. Error t value Pr(>|t|)
+# (Intercept)     -0.450813   0.189922  -2.374 0.017952 *  
+# scale(YPLL_sqrt)-0.063894   0.043551  -1.467 0.142913    
+# age              0.010422   0.002777   3.753 0.000193 ***
+# genderMale       0.172466   0.083123   2.075 0.038463 *  
+# ethnicityBlack  -0.554994   0.252328  -2.199 0.028255 *  
+# ethnicityMixed  -0.103921   0.296171  -0.351 0.725811    
+# ethnicityOther   0.026894   0.312421   0.086 0.931433    
+# ethnicityWhite  -0.099965   0.160331  -0.623 0.533216 
+
+# After YPLL_sum correction, the YPLL_sum effect becomes stronger (-0.09), marginally significant (p=0.08)
+# But not with the Holm-Bonferroni correction.
+# The gender and ethnicity effects disappear.
+
+lm_discounting3 <- lm(scale(patience_score) ~ scale(YPLL_sqrt) + age + gender + ethnicity + scale(income_log) + SES_subj,data=d)
+summary(lm_discounting3)
+# Coefficients:
+#                   Estimate Std. Error t value Pr(>|t|)
+# (Intercept)      -0.812781   0.242121  -3.357 0.000842 ***
+# scale(YPLL_sqrt) -0.053487   0.043468  -1.230 0.219035    
+# age               0.009030   0.002773   3.256 0.001197 ** 
+# genderMale        0.148692   0.082611   1.800 0.072421 .  
+# ethnicityBlack   -0.576615   0.250061  -2.306 0.021486 *  
+# ethnicityMixed   -0.116084   0.293533  -0.395 0.692647    
+# ethnicityOther    0.016034   0.309334   0.052 0.958680    
+# ethnicityWhite   -0.096346   0.159608  -0.604 0.546330    
+# scale(income_log) 0.058002   0.044928   1.291 0.197239    
+# SES_subj          0.078944   0.027662   2.854 0.004481 **
+
+# Only effect that remains is the positive effect of SES on patience (conversely on delay discounting)
+
+lm_discounting4 <- lm(scale(patience_score) ~ scale(YPLL_sqrt) + age + gender + ethnicity + scale(income_log) + SES_subj + stress,data=d)
+summary(lm_discounting4)
+# Coefficients:
+#                   Estimate Std. Error t value Pr(>|t|)
+# (Intercept)     -0.872775   0.299158  -2.917  0.00367 **
+# scale(YPLL_sqrt)-0.053541   0.043503  -1.231  0.21894   
+# age              0.009245   0.002845   3.249  0.00123 **
+# genderMale       0.155342   0.084933   1.829  0.06794 . 
+# ethnicityBlack  -0.568584   0.251361  -2.262  0.02408 * 
+# ethnicityMixed  -0.120492   0.294051  -0.410  0.68214   
+# ethnicityOther   0.008360   0.310394   0.027  0.97852   
+# ethnicityWhite  -0.099312   0.159972  -0.621  0.53498   
+# scale(income_log)0.058515   0.044989   1.301  0.19392   
+# SES_subj         0.080781   0.028200   2.865  0.00434 **
+# stress           0.012717   0.037187   0.342  0.73251 
+
+lm_discounting5 <- lm(scale(patience_score) ~ scale(YPLL_sqrt) + age + gender + ethnicity + scale(income_log) + SES_subj + stress + extrinsic_risk_sqrt,data=d)
+summary(lm_discounting5)
+# Coefficients:
+#                      Estimate Std. Error t value Pr(>|t|)
+# (Intercept)         -0.807563   0.307792  -2.624  0.00894 **
+# scale(YPLL_sqrt)    -0.050267   0.043661  -1.151  0.25011   
+# age                  0.009067   0.002853   3.179  0.00156 **
+# genderMale           0.160295   0.085124   1.883  0.06022 . 
+# ethnicityBlack      -0.560712   0.251554  -2.229  0.02622 * 
+# ethnicityMixed      -0.101064   0.294885  -0.343  0.73194   
+# ethnicityOther       0.027334   0.311155   0.088  0.93003   
+# ethnicityWhite      -0.086512   0.160624  -0.539  0.59038   
+# scale(income_log)    0.057114   0.045023   1.269  0.20514   
+# SES_subj             0.078284   0.028340   2.762  0.00593 **
+# stress               0.017473   0.037564   0.465  0.64201   
+# extrinsic_risk_sqrt -0.017760   0.019658  -0.903  0.36668 
+
+### Even the extrinsic risk effect on delay discounting is absent!
+
+lm_discounting6 <- lm(scale(patience_score) ~ extrinsic_risk_sqrt + SES_subj,data=d)
+summary(lm_discounting6)
+# Coefficients:
+#                     Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)         -0.45335    0.18104  -2.504 0.012559 *  
+# extrinsic_risk_sqrt -0.02115    0.01946  -1.087 0.277579    
+# SES_subj             0.09775    0.02633   3.713 0.000225 ***
+
+#################################
+###### Secondary analyses #######
+#################################
+
+######### Alternative ways to measure the effect of (premature) death exposure within the family ######
+
+#### The number of deaths within the family
+lm_health_a <- lm(scale(look_after_health_x3) ~ n_deaths,data=d)
+summary(lm_health_a)
+AIC(lm_health_a) #1588, not as good
+
+#### The number of premature deaths within the family ####
+### Its effect on looking after health 
 lm_health_n_premdeaths1 <- lm(scale(look_after_health_x3) ~ prem_sum,data=d)
-summary(lm_health_n_premdeaths1)
+summary(lm_health_n_premdeaths1) #positive effect, not good (p<0.05)
 
 lm_health_n_premdeaths2 <- lm(scale(look_after_health_x3) ~ prem_sum + age + gender + ethnicity,data=d)
-summary(lm_health_n_premdeaths2)
+summary(lm_health_n_premdeaths2) #positive effect of age, negative effect of white ethnicity
 
 lm_health_n_premdeaths3 <- lm(scale(look_after_health_x3) ~ prem_sum + age + gender + ethnicity + income_log + SES_subj,data=d)
-summary(lm_health_n_premdeaths3)
+summary(lm_health_n_premdeaths3) # positive effect of age and SES subj, negative effect of white ethn
 
 lm_health_n_premdeaths4 <- lm(scale(look_after_health_x3) ~ prem_sum + age + gender + ethnicity + income_log + SES_subj + stress,data=d)
-summary(lm_health_n_premdeaths4)
+summary(lm_health_n_premdeaths4) # same + negative effect of stress
 
-  ##### Does extrinsic mortality risk mediate the relationship between SES and looking after health? ####
+### Its effect on patience score
+lm_discounting_n_premdeaths1 <- lm(patience_score ~ prem_sum,data=d)
+summary(lm_discounting_n_premdeaths1) # nothing
+
+fig1 = ggplot(d, aes(x=prem_sum, y=patience_score)) + 
+  theme_bw() + 
+  geom_point() + 
+  geom_smooth(method="lm") +
+  facet_wrap(~gender) +
+  xlab("prem sum") + 
+  ylab("Patience score")
+fig1
+
+lm_discounting_n_premdeaths2 <- lm(patience_score ~ prem_sum*gender + age + ethnicity,data=d)
+summary(lm_discounting_n_premdeaths2) # significant effect of prem_sum when interaction with gender
+
+lm_discounting_n_premdeaths3 <- lm(patience_score ~ prem_sum*gender + age + ethnicity + income_log + SES_subj,data=d)
+summary(lm_discounting_n_premdeaths3) # idem
+
+lm_discounting_n_premdeaths4 <- lm(patience_score ~ prem_sum*gender + age + ethnicity + income_log + SES_subj + stress,data=d)
+summary(lm_discounting_n_premdeaths4) # idem
+
+
+##### Does extrinsic mortality risk mediate the relationship between SES and looking after health? ####
 
 lm_SES_hb <-glm(scale(look_after_health_x3) ~ SES_subj + age + gender + ethnicity, data=d)
 summary(lm_SES_hb)
@@ -229,99 +388,12 @@ mediation.test(d$extrinsic_risk_sqrt,d$SES_subj,d$look_after_health_x3)
 
 # PEMR is a mediator between subjective SES and looking after health (p<.01, z=3). Yay!
 
-##############################
-####### PATIENCE SCORE #######
-##############################
+  #### Does financial time discounting mediates the relationship between YPLL_sum and health effort? ####
+mediation.test(d$patience_score,d$YPLL_sum,d$look_after_health) # pas du tout.
+mediation.test(d$patience_score,d$prem_sum,d$look_after_health) # niet
+mediation.test(d$patience_score,d$n_deaths,d$look_after_health) # nicht
 
-lm_discounting1 <- lm(scale(patience_score) ~ scale(YPLL_sqrt),data=d)
-summary(lm_discounting1)
-# Coefficients:
-#                   Estimate Std. Error t value Pr(>|t|)
-# (Intercept)       1.856e-16  4.218e-02   0.000    1.000
-# scale(YPLL_sqrt) -9.000e-03  4.222e-02  -0.213    0.831
 
-# The nullest of the null results. NOt drastically changes after YPLL_sum correction
-
-lm_discounting2 <- lm(scale(patience_score) ~ scale(YPLL_sqrt) + age + gender + ethnicity,data=d)
-summary(lm_discounting2)
-# Coefficients:
-#                  Estimate Std. Error t value Pr(>|t|)
-# (Intercept)     -0.450813   0.189922  -2.374 0.017952 *  
-# scale(YPLL_sqrt)-0.063894   0.043551  -1.467 0.142913    
-# age              0.010422   0.002777   3.753 0.000193 ***
-# genderMale       0.172466   0.083123   2.075 0.038463 *  
-# ethnicityBlack  -0.554994   0.252328  -2.199 0.028255 *  
-# ethnicityMixed  -0.103921   0.296171  -0.351 0.725811    
-# ethnicityOther   0.026894   0.312421   0.086 0.931433    
-# ethnicityWhite  -0.099965   0.160331  -0.623 0.533216 
-
-# After YPLL_sum correction, the YPLL_sum effect becomes stronger (0.09), marginally significant (p=0.08)
-# But not with the Holm-Bonferroni correction.
-# The gender and ethnicity effects disappear.
-
-lm_discounting3 <- lm(scale(patience_score) ~ scale(YPLL_sqrt) + age + gender + ethnicity + scale(income_log) + SES_subj,data=d)
-summary(lm_discounting3)
-# Coefficients:
-#                   Estimate Std. Error t value Pr(>|t|)
-# (Intercept)      -0.812781   0.242121  -3.357 0.000842 ***
-# scale(YPLL_sqrt) -0.053487   0.043468  -1.230 0.219035    
-# age               0.009030   0.002773   3.256 0.001197 ** 
-# genderMale        0.148692   0.082611   1.800 0.072421 .  
-# ethnicityBlack   -0.576615   0.250061  -2.306 0.021486 *  
-# ethnicityMixed   -0.116084   0.293533  -0.395 0.692647    
-# ethnicityOther    0.016034   0.309334   0.052 0.958680    
-# ethnicityWhite   -0.096346   0.159608  -0.604 0.546330    
-# scale(income_log) 0.058002   0.044928   1.291 0.197239    
-# SES_subj          0.078944   0.027662   2.854 0.004481 **
-
-# Only effect that remains is the positive effect of SES on patience (conversely on delay discounting)
-
-lm_discounting4 <- lm(scale(patience_score) ~ scale(YPLL_sqrt) + age + gender + ethnicity + scale(income_log) + SES_subj + stress,data=d)
-summary(lm_discounting4)
-# Coefficients:
-#                   Estimate Std. Error t value Pr(>|t|)
-# (Intercept)     -0.872775   0.299158  -2.917  0.00367 **
-# scale(YPLL_sqrt)-0.053541   0.043503  -1.231  0.21894   
-# age              0.009245   0.002845   3.249  0.00123 **
-# genderMale       0.155342   0.084933   1.829  0.06794 . 
-# ethnicityBlack  -0.568584   0.251361  -2.262  0.02408 * 
-# ethnicityMixed  -0.120492   0.294051  -0.410  0.68214   
-# ethnicityOther   0.008360   0.310394   0.027  0.97852   
-# ethnicityWhite  -0.099312   0.159972  -0.621  0.53498   
-# scale(income_log)0.058515   0.044989   1.301  0.19392   
-# SES_subj         0.080781   0.028200   2.865  0.00434 **
-# stress           0.012717   0.037187   0.342  0.73251 
-
-lm_discounting5 <- lm(scale(patience_score) ~ scale(YPLL_sqrt) + age + gender + ethnicity + scale(income_log) + SES_subj + stress + extrinsic_risk_sqrt,data=d)
-summary(lm_discounting5)
-# Coefficients:
-#                      Estimate Std. Error t value Pr(>|t|)
-# (Intercept)         -0.807563   0.307792  -2.624  0.00894 **
-# scale(YPLL_sqrt)    -0.050267   0.043661  -1.151  0.25011   
-# age                  0.009067   0.002853   3.179  0.00156 **
-# genderMale           0.160295   0.085124   1.883  0.06022 . 
-# ethnicityBlack      -0.560712   0.251554  -2.229  0.02622 * 
-# ethnicityMixed      -0.101064   0.294885  -0.343  0.73194   
-# ethnicityOther       0.027334   0.311155   0.088  0.93003   
-# ethnicityWhite      -0.086512   0.160624  -0.539  0.59038   
-# scale(income_log)    0.057114   0.045023   1.269  0.20514   
-# SES_subj             0.078284   0.028340   2.762  0.00593 **
-# stress               0.017473   0.037564   0.465  0.64201   
-# extrinsic_risk_sqrt -0.017760   0.019658  -0.903  0.36668 
-
-### Even the extrinsic risk effect on delay discounting is absent!
-
-lm_discounting6 <- lm(scale(patience_score) ~ extrinsic_risk_sqrt + SES_subj,data=d)
-summary(lm_discounting6)
-# Coefficients:
-#                     Estimate Std. Error t value Pr(>|t|)    
-# (Intercept)         -0.45335    0.18104  -2.504 0.012559 *  
-# extrinsic_risk_sqrt -0.02115    0.01946  -1.087 0.277579    
-# SES_subj             0.09775    0.02633   3.713 0.000225 ***
-
-#################################
-###### Secondary analyses #######
-#################################
 
 ########### Age at first child ##########
 
@@ -332,7 +404,7 @@ summary(lm_1st_child1)
 # (Intercept)      -0.001084   0.057291  -0.019    0.985
 # scale(YPLL_sqrt)  0.007712   0.058267   0.132    0.895
 
-lm_1st_child2 <- glm(scale(age_child1_sqrt) ~ scale(YPLL_sqrt) + age + gender + ethnicity,data=d)
+lm_1st_child2 <- glm(scale(age_child1_sqrt) ~ scale(YPLL_sqrt)*gender + age + ethnicity,data=d)
 summary(lm_1st_child2)
 # Coefficients:
 #                   Estimate Std. Error t value Pr(>|t|)    
@@ -345,7 +417,16 @@ summary(lm_1st_child2)
 # ethnicityOther    0.935423   0.458405   2.041 0.042157 *  
 # ethnicityWhite    0.419631   0.233676   1.796 0.073525 .
 
-lm_1st_child3 <- glm(scale(age_child1_sqrt) ~ scale(YPLL_sqrt) + age + gender + ethnicity + scale(income_log) + SES_subj, data=d)
+fig5 = ggplot(d, aes(x=YPLL_sum, y=age_first_child)) + 
+  theme_bw() + 
+  geom_point() + 
+  geom_smooth(method="lm") +
+  facet_wrap(~gender) +
+  xlab("YPLL sum") + 
+  ylab("Age first child")
+fig1
+
+lm_1st_child3 <- glm(scale(age_child1_sqrt) ~ scale(YPLL_sqrt)*gender + age + ethnicity + scale(income_log) + SES_subj, data=d)
 summary(lm_1st_child3)
 # Coefficients:
 #                    Estimate Std. Error t value Pr(>|t|)    
@@ -380,14 +461,14 @@ summary(lm_1st_child4)
 ########### Ideal age at first child ########
 
 lm_ideal_child1 <- glm(ideal_age ~ scale(YPLL_sqrt), data=d)
-summary(lm_1st_child1)
+summary(lm_ideal_child1)
 # Coefficients:
 #                   Estimate Std. Error t value Pr(>|t|)    
 # (Intercept)      -0.001084   0.057291  -0.019    0.985
 # scale(YPLL_sqrt)  0.007712   0.058267   0.132    0.895
 
-lm_ideal_child2 <- glm(ideal_age ~ scale(YPLL_sqrt) + age + gender + ethnicity, data=d)
-summary(lm_1st_child2)
+lm_ideal_child2 <- glm(ideal_age ~ scale(YPLL_sqrt) + age + gender + ethnicity, data=d3)
+summary(lm_ideal_child2)
 # Coefficients:
 #                   Estimate Std. Error t value Pr(>|t|)    
 # (Intercept)      -0.659735   0.321063  -2.055 0.040751 *  
@@ -429,4 +510,47 @@ summary(lm_1st_child4)
 # scale(income_log) -0.050126   0.067993  -0.737 0.461563    
 # SES_subj           0.140646   0.038196   3.682 0.000274 ***
 # stress             0.101678   0.050248   2.024 0.043908 * 
+
+#### Green behaviour ####
+lm_env <- glm(environment_1 ~scale(YPLL_sqrt) + age + gender + ethnicity + scale(income_log) + SES_subj + stress, data=d)
+summary(lm_env)
+
+lm_env_tpt <-glm(env_transport ~scale(YPLL_sqrt) + age + gender + ethnicity, data=d3)
+summary(lm_env_tpt) # Lol there's something but it's in the wrong direction
+
+fig6 = ggplot(d3, aes(x=YPLL_sum, y=env_transport)) + 
+  theme_bw() + 
+  geom_point() + 
+  geom_smooth(method="lm") +
+  #facet_wrap(~gender) +
+  xlab("YPLL sum") + 
+  ylab("Effort to look after the environment in transport choices")
+fig6
+
+### Smoker status ####
+lm_smoker <- glm(smoker ~scale(YPLL_sqrt) + age + gender + ethnicity, data=d3, family = binomial)
+summary(lm_smoker) # Hallelujah dos (becomes marginal when other covariates added)
+fig7 = ggplot(d3, aes(x=YPLL_sum, y=smoker)) +
+  theme_bw() +
+  geom_point() +
+  geom_smooth(method="lm") +
+  #facet_wrap(~gender) +
+  xlab("YPLL sum") +
+  ylab("Smoker status")
+fig7
+
+plot_model(lm_env_tpt, type = "pred", terms = "YPLL_sqrt")
+
+### Check-up ####
+lm_checkup <- glm(checkup ~scale(YPLL_sqrt)*gender + age +  ethnicity, data=d)
+summary(lm_checkup) # nein
+
+#### Breastfeed length ####
+d3 <- d %>% filter(!is.na(breastfeed_length))
+summary(d3$breastfeed_length)
+lm_breastfeed <- glm(breastfeed_length ~ scale(YPLL_sqrt) + age + ethnicity, data=d3)
+summary(lm_breastfeed) # no effect
+
+
+
 

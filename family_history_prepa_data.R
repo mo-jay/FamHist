@@ -1,7 +1,7 @@
 # Preparation of the data from the study 'Premature mortality and timing of your life: 
 # An exploratory correlational study' for analysis
 # Mona Joly and colleagues
-# 10/02/21
+# 16/02/21
 
 rm(list=ls())
 #install.packages("tidyverse")
@@ -74,7 +74,9 @@ names(d_merged)[names(d_merged) == "attention_4_1"] <- "attention_4"
 d2 <- d_merged %>% filter(consent=="Yes, I consent to participate.")              # N = 630
 
   ### Removing data of participants who didn't finish the survey
-d2 <- d2 %>% filter(Finished=="True")                                             # N = 612
+d2 <- d2 %>% filter(Finished=="True")    
+
+#### N = 612 participants recruited
 
   ### Removing data of participants who didn't give the same smoking status twice
 d2 <- d2 %>% filter(smoker==attention_smoker)                                     # N = 608
@@ -97,9 +99,23 @@ names(d2)[names(d2) == "age.x"] <- "age"
 d2 <- d2 %>% filter(!(gender=="Male" & Sex=="Female") | (gender=="Female" & Sex=="Male")) # N = 589
 d2$Sex <- NULL
 
-  ### Removing data of participants who did not understand we asked for grandparents age at death and not their own
+  ### Removing data of participants who were very quick and failed an attentional task
+d2$Duration <- as.numeric(d2$Duration)
+mean(d2$Duration)-sd(d2$Duration)     # mean - 1 sd = 139.2 seconds
+nrow(d2[which(d2$attention_4 !="4" & d2$Duration < mean(d2$Duration)-sd(d2$Duration)),]) #1
+d2 <- d2[-c(which(d2$attention_4 !="4" & d2$Duration 
+                  < mean(d2$Duration)-sd(d2$Duration))),]             # N = 577
 
-      ### Recoding of parental and grandparental age at death
+  ### Removing data of participants who were extremely long and failed an attentional task
+mean(d2$Duration)+3*sd(d2$Duration)   # mean + 3 sd = 1487 seconds
+nrow(d2[which(d2$attention_4 !="4" & d2$Duration > mean(d2$Duration)+3*sd(d2$Duration)),]) #0
+
+##### 588 participants after the basic exclusions
+612-588 # 24 excluded
+
+### Removing data of participants who did not understand we asked for grandparents age at death and not their own
+
+### Recoding of parental and grandparental age at death
 
 d2$parent1_age_2[which(d2$parent1_age_2=="<20")] <- 19
 d2$parent2_age_2[which(d2$parent2_age_2=="<20")] <- 19
@@ -117,20 +133,20 @@ d2$gp4_age_2[which(d2$gp4_age_2=="90")] <- 91
 
 d2 <- d2 %>% mutate(across(contains("age_2"), as.numeric))
 
-      ### Removing data of participants who answered 3 times that their gp died before the age of 25
-count(d2 %>% filter(gp1_age_2 <25 & gp2_age_2<25 & gp3_age_2<25))       # 7
+### Removing data of participants who answered 3 times that their gp died before the age of 25
+# count(d2 %>% filter(gp1_age_2 <25 & gp2_age_2<25 & gp3_age_2<25))       # 7
 # It actually doesn't give the number of rows unless I use nrow() or count()
 
-d2 <- d2[-c(which(d2$gp1_age_2<25 & d2$gp2_age_2<25 & d2$gp3_age_2<25)),]           # N = 582
+# d2 <- d2[-c(which(d2$gp1_age_2<25 & d2$gp2_age_2<25 & d2$gp3_age_2<25)),]           # N = 582
 # d2 <- d2 %>%
 #   mutate(drop = gp1_age_2<25 & d2$gp2_age_2<25 & d2$gp3_age_2<25) %>%
 #   filter(drop == FALSE | is.na(drop)) %>%
 #   select(-drop)
 
-count(d2 %>% filter(parent1_age_2<25 & gp1_age_2<25 & gp2_age_2<25))     #0
-count(d2 %>% filter(parent1_age_2<25 & parent2_age_2<25 & gp1_age_2<25)) #0
+# count(d2 %>% filter(parent1_age_2<25 & gp1_age_2<25 & gp2_age_2<25))     #0
+# count(d2 %>% filter(parent1_age_2<25 & parent2_age_2<25 & gp1_age_2<25)) #0
 
-  ### Removing data of participants who answered twice that their relatives died before the age of 25 and failed an attention test
+### Removing data of participants who answered twice that their relatives died before the age of 25 and failed an attention test
 count(d2 %>% filter(gp1_age_2<25 & gp2_age_2<25 & attention_4 !="4" ))                   #0
 count(d2 %>% filter(gp1_age_2<25 & gp2_age_2<25 & attention_fruit!="Strongly agree"))      #0
 count(d2 %>% filter(gp1_age_2<25 & gp3_age_2<25 & attention_4 !="4" ))                   #1
@@ -154,7 +170,7 @@ d2 <- d2[-c(which(d2$parent1_age_2<25 & d2$parent2_age_2<25 & d2$attention_4 !="
 
 nrow(d2[which(d2$parent1_age_2<25 & d2$parent2_age_2<25 & d2$attention_fruit !="Strongly agree" ),])  #0
 nrow(d2[which(d2$parent1_age_2<25 & d2$gp2_age_2<25 & d2$attention_4 !="4" ),])               #1
-d2 <- d2[-c(which(d2$parent1_age_2<25 & d2$gp2_age_2<25 & d2$attention_4 !="4")),]            # N = 578
+d2 <- d2[-c(which(d2$parent1_age_2<25 & d2$gp2_age_2<25 & d2$attention_4 !="4")),]            # N = 578, 583 without first triage
 
 nrow(d2[which(d2$parent1_age_2<25 & d2$gp2_age_2<25 & d2$attention_fruit!="Strongly agree"),])  #0
 
@@ -166,30 +182,10 @@ summary(d2$gp3_age_2)
 summary(d2$gp4_age_2)
 
 d2 %>% 
-  summarise(across(contains("age_2"), ~mean(.x, na.rm = TRUE)))
-
-  ### Removing data of participants who were very quick and failed an attentional task
-d2$Duration <- as.numeric(d2$Duration)
-mean(d2$Duration)-sd(d2$Duration)     # mean - 1 sd = 139.2 seconds
-nrow(d2[which(d2$attention_4 !="4" & d2$Duration < mean(d2$Duration)-sd(d2$Duration)),]) #1
-d2 <- d2[-c(which(d2$attention_4 !="4" & d2$Duration 
-                  < mean(d2$Duration)-sd(d2$Duration))),]             # N = 577
-
-  ### Removing data of participants who were extremely long and failed an attentional task
-mean(d2$Duration)+3*sd(d2$Duration)   # mean + 3 sd = 1487 seconds
-nrow(d2[which(d2$attention_4 !="4" & d2$Duration > mean(d2$Duration)+3*sd(d2$Duration)),]) #0
-
-  ### Removing data of participants who didn't say whether their parents or grandparents were alive or not
-table(d2$parents_dead)
-nrow(d2[which(d2$parents_dead=="Rather not say"),]) #1
-d2 <- d2[-c(which(d2$parents_dead=="Rather not say")),]                                         # N = 576
-nrow(d2[which(d2$gp_dead==""),]) #10
-d2 <- d2[-c(which(d2$gp_dead=="")),]                                                            # N = 566
-nrow(d2[which(d2$gp_dead=="Rather not say"),]) #3
-d2 <- d2[-c(which(d2$gp_dead=="Rather not say")),]                                              # N = 563
+  summarise(across(contains("age_2"), ~mean(.x, na.rm = TRUE)))                                             # N = 563
 
   ### Ejections to add: lack of variability in answers
-d3 <- d2[which(d2$status=="REJECTED"),] #2 
+d3 <- d2[which(d2$status=="REJECTED"),] #3 
 
 ###### Recoding of character variables into numeric variables #####
 
@@ -304,6 +300,15 @@ table(d2$breastfeed_yesno)
 #d3<-d2[which(d2$breastfeed_yesno==1),] #113 (/564)
 #(nrow(d2[which(d2$breastfeed_yesno==1),]))/(nrow(d2[which(d2$children==1 & d2$gender==0),])) #64,6% of women with children breastfed their 1st child
 #(nrow(d2[which(!is.na(d2$breastfeed_yesno)),]))/nrow(d2) #30,9% of the participants answered the breastfeed question
+
+  ### Recoding of breastfeed length
+summary(d2$breastfeed_length)
+d2 <- d2 %>% mutate(
+  breastfeed_length = case_when(
+    breastfeed_yesno ==0 ~ 0,
+    TRUE ~ as.numeric(breastfeed_length)),
+)
+d2$breastfeed_length <- as.numeric(d2$breastfeed_length)
 
   ### Recoding of ideal age var for participants w/o children
 # table(d2$ideal_age)
@@ -489,6 +494,8 @@ d2 %>% filter(is.na(YPLL_sum))
 summary(d2$YPLL_sum)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
 # 0.00    9.00   27.00   34.08   50.00  208.00     170 
+d2 %>% filter(YPLL_sum > mean(d2$YPLL_sum, na.rm = TRUE) + 2*sd(d2$YPLL_sum,na.rm=TRUE)) # removes 14 participants with a YPLL_sum > 121,8
+          # equivalent of having all relatives who died before the age of 55
 
   ### Creation of a dummy YPLL_sum var
 d2 <- d2 %>% mutate(
