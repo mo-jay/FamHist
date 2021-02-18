@@ -1,7 +1,7 @@
 # Preparation of the data from the study 'Premature mortality and timing of your life: 
 # An exploratory correlational study' for analysis
 # Mona Joly and colleagues
-# 17/02/21
+# 18/02/21
 
 rm(list=ls())
 #install.packages("tidyverse")
@@ -335,6 +335,7 @@ d2 <- d2 %>% mutate(
 table(d2$breastfeed_length)
 # 6 months or more Less than 6 months   No breastfeeding 
 #               67                 51                 62
+# d2$breastfeed_length <- as.factor(d2$breastfeed_length)
 
   ### Recoding of ideal age var for participants w/o children
 # table(d2$ideal_age)
@@ -385,7 +386,7 @@ d2 <- d2 %>% mutate(across(contains("close"), as.numeric))
 class(d2$gp1_control_1)
 
 lapply(d2, class)
-cols.num <- c("age","look_after_health","environment_1","env_transport","age_first_child","breastfeed_length","household","attention_4")
+cols.num <- c("age","look_after_health","environment_1","env_transport","age_first_child","household","attention_4")
 d2[cols.num] <- sapply(d2[cols.num],as.numeric)
 sapply(d2[cols.num],class)
 
@@ -534,8 +535,20 @@ d2 <- d2 %>% mutate(
   n_deaths = parents_dead + gp_dead
 )
 d2 %>% filter(is.na(n_deaths))
+table(d2$n_deaths)
 summary(d2$n_deaths)
-ggdensity(d2$n_deaths)
+hist(d2$n_deaths)
+count(d2 %>% filter(n_deaths <= 3))/(582-17) # 29% had 3 deaths or less in their family
+count(d2 %>% filter(n_deaths == 4))/(582-17) #26% had 4 deaths in their family
+count(d2 %>% filter(n_deaths >= 5))/(582-17) # 45% had 5 to 6 deaths in their family
+
+d2 <- d2 %>% mutate(
+  n_deaths = case_when(
+    n_deaths <= 3 ~ "0-3 deaths",
+    n_deaths == 4 ~ "4 deaths",
+    n_deaths >= 5 ~ "5-6 deaths"),
+)
+table(d2$n_deaths)
 
   ### Creation of sum of premature deaths within the family
 d2 <- d2 %>% mutate(
@@ -562,11 +575,24 @@ summary(d2$p1_prem)
 summary(d2$p2_prem)
 
 d2 <- d2 %>% mutate(
-  prem_sum = p1_prem + p2_prem + gp1_prem + gp2_prem + gp3_prem + gp4_prem
+  n_prem = p1_prem + p2_prem + gp1_prem + gp2_prem + gp3_prem + gp4_prem
 )
-summary(d2$prem_sum)
+summary(d2$n_prem)
 #     Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
-#   0.000   1.000   2.000   2.239   3.000   6.000     170
+#    0.000   1.000   2.000   2.276   3.000   6.000     184
+
+hist(d2$n_prem)
+count(d2 %>% filter(n_prem <= 1))/(582-184) # 35% had 0 or 1 premature deaths in their family
+count(d2 %>% filter(n_prem > 1 & n_prem < 4))/(582-184) #43% had 2 or 3 premature deaths in their family
+count(d2 %>% filter(n_prem >= 4))/(582-184) # 21% had 4 to 6 premature deaths in their family
+
+d2 <- d2 %>% mutate(
+  n_prem = case_when(
+    n_prem <= 1 ~ "0-1 prem deaths",
+    n_prem > 1 & n_prem < 4 ~ "2-3 prem deaths",
+    n_prem >= 4 ~ "4-6 prem deaths"),
+)
+table(d2$n_prem)
 
     ####### PATIENCE SCORE
 
@@ -651,11 +677,16 @@ hist(d2$look_after_health)
 ggdensity(d2$look_after_health)
 qqPlot(d2$look_after_health)
 skewness(d2$look_after_health) #-1.28 --> highly negatively skewed
-hist(log(max(d2$look_after_health)-d2$look_after_health+1))
-ggdensity(log(max(d2$look_after_health)-d2$look_after_health+1))
-d2$look_after_health_log <- log(max(d2$look_after_health)-d2$look_after_health+1)
-skewness(d2$look_after_health_log)
+hist(-log(max(d2$look_after_health)-d2$look_after_health+1))
+ggdensity(-log(max(d2$look_after_health)-d2$look_after_health+1))
+d2$look_after_health_log <- -log(max(d2$look_after_health)-d2$look_after_health+1)
+skewness(d2$look_after_health_log) #1.57, worse
 qqPlot(d2$look_after_health_log)
+
+d2$look_after_health_sqrt <- -sqrt(max(d2$look_after_health+1)-d2$look_after_health)
+hist(d2$look_after_health_sqrt)
+skewness(d2$look_after_health_sqrt)  #-0.17, great
+qqPlot(d2$look_after_health_sqrt) # besser
 
 # d2$look_after_health_sqrt <- transform(
 #   d2$look_after_health,
@@ -780,8 +811,8 @@ ggdensity(d2$patience_score) # kind of bimodal
 # Maybe I can binarise it!
 d2 <- d2 %>% mutate(
   patience_score_bi = case_when(
-    patience_score  <16  ~ "low",
-    patience_score  >=16  ~ "high"),
+    patience_score  <16  ~ 0,
+    patience_score  >=16  ~ 1),
 ) 
 d2$patience_score_bi <- as.factor(d2$patience_score_bi)
 summary(d2$patience_score_bi)
