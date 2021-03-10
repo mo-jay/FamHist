@@ -1,23 +1,42 @@
 # Preparation of the data from the study 'Premature mortality and timing of your life: 
 # An exploratory correlational study' for analysis
 # Mona Joly and colleagues
-# 18/02/21
+# 08/03/21
 
 rm(list=ls())
-#install.packages("tidyverse")
-#install.packages("tidylog")
-#install.packages("rmarkdown")
-# install.packages("e1071")
-# install.packages("dlookr")
-# install.packages("ggpubr")
-library(tidyverse)
-library(tidylog)
-library(rmarkdown)
-library(e1071)      # to calculate skewness
-library(dlookr)     # to transform data
-library(ggpubr)     # for density plots
-library(car)        # for qqPlots
-#render("1-example.Rmd")
+
+### Loading of required packages ####
+
+if(!require(tidyverse)){
+  install.packages("tidyverse")
+  library(tidyverse)
+}
+if(!require(tidylog)){
+  install.packages("tidylog")
+  library(tidylog)
+}                           # to get output msgs like in Stata
+if(!require(rmarkdown)){
+  install.packages("rmarkdown")
+  library(rmarkdown)
+}
+if(!require(e1071)){
+  install.packages("e1071")
+  library(e1071)
+}                           # to calculate skewness
+# if(!require(dlookr)){
+#   install.packages("dlookr")
+#   library(dlookr)
+# }                         # to transform data
+if(!require(ggpubr)){
+  install.packages("ggpubr")
+  library(ggpubr)
+}                           # for density Plots
+if(!require(car)){
+  install.packages("car")
+  library(car)
+}                           # for qqPlots
+
+#render("1-example.Rmd")    # Supposedly for Rmarkdown
 
 
 # setwd("/Users/monou/Nextcloud/Family history questionnaire/Data analysis") # Mac France Mona
@@ -82,21 +101,21 @@ d2 <- d2 %>% filter(Finished=="True")
 d2 <- d2 %>% filter(smoker==attention_smoker)                                     # N = 608
 
   ### Removing data of participants who failed two attention checks
-d2 <- d2 %>% filter(!(attention_4 !=4 & attention_fruit!="Strongly agree"))     # N = 605
+d2 <- d2 %>% filter(!(attention_4 !=4 & attention_fruit!="Strongly agree"))       # N = 605
 
-  ### Removing data of participants with a Prolific score <95
-d2 <- d2 %>% filter(prolific_score>=95)                                           # N = 602
+  ### Removing data of participants with a Prolific score <95 who failed the attention check
+d2 <- d2 %>% filter(!(prolific_score<95 & attention_4 !=4))                       # N = 603
 
   ### Removing data of participants who gave a significantly different age on Prolific and on Qualtrics
 # d2$age.x <- as.numeric(d2$age.x)
 # d2$age.y <- as.numeric(d2$age.y)
-d2 <- d2 %>% filter(age.x == age.y | age.x == age.y+1 | age.x == age.y - 1)       # N = 590
+d2 <- d2 %>% filter(age.x == age.y | age.x == age.y+1 | age.x == age.y - 1)       # N = 591
 
 d2$age.y <- NULL
 names(d2)[names(d2) == "age.x"] <- "age"
 
   ### Removing data of participants who gave a different gender on Prolific and on Qualtrics
-d2 <- d2 %>% filter(!(gender=="Male" & Sex=="Female") | (gender=="Female" & Sex=="Male")) # N = 589
+d2 <- d2 %>% filter(!(gender=="Male" & Sex=="Female") | (gender=="Female" & Sex=="Male")) # N = 590
 d2$Sex <- NULL
 
   ### Removing data of participants who were very quick and failed an attentional task
@@ -104,14 +123,16 @@ d2$Duration <- as.numeric(d2$Duration)
 mean(d2$Duration)-sd(d2$Duration)     # mean - 1 sd = 139.2 seconds
 nrow(d2[which(d2$attention_4 !="4" & d2$Duration < mean(d2$Duration)-sd(d2$Duration)),]) #1
 d2 <- d2[-c(which(d2$attention_4 !="4" & d2$Duration 
-                  < mean(d2$Duration)-sd(d2$Duration))),]             # N = 577
+                  < mean(d2$Duration)-sd(d2$Duration))),]             # N = 589
 
   ### Removing data of participants who were extremely long and failed an attentional task
-mean(d2$Duration)+3*sd(d2$Duration)   # mean + 3 sd = 1487 seconds
-nrow(d2[which(d2$attention_4 !="4" & d2$Duration > mean(d2$Duration)+3*sd(d2$Duration)),]) #0
+# mean(d2$Duration)+3*sd(d2$Duration)   # mean + 3 sd = 1487 seconds
+# nrow(d2[which(d2$attention_4 !="4" & d2$Duration > mean(d2$Duration)+3*sd(d2$Duration)),]) #0
 
 ##### 588 participants after the basic exclusions
-612-588 # 24 excluded
+612-589 # 23 excluded
+
+#d2[which(d2$parent1_age_2 == 19 | d2$parent2_age_2 == 19 | d2$gp1_age_2 == 19 | d2$gp2_age_2 == 19 | d2$gp3_age_2 == 19 | d2$gp4_age_2 == 19),]
 
 ### Removing data of participants who did not understand we asked for grandparents age at death and not their own
 
@@ -123,6 +144,9 @@ d2$gp1_age_2[which(d2$gp1_age_2=="<20")] <- 19
 d2$gp2_age_2[which(d2$gp2_age_2=="<20")] <- 19
 d2$gp3_age_2[which(d2$gp3_age_2=="<20")] <- 19
 d2$gp4_age_2[which(d2$gp4_age_2=="<20")] <- 19
+
+#d2[which(d2$parent1_age_2 == 19 | d2$parent2_age_2 == 19 | d2$gp1_age_2 == 19 | d2$gp2_age_2 == 19 | d2$gp3_age_2 == 19 | d2$gp4_age_2 == 19),]
+
 
 d2$parent1_age_2[which(d2$parent1_age_2==">90")] <- 91
 d2$parent2_age_2[which(d2$parent2_age_2=="90")] <- 91
@@ -147,32 +171,32 @@ d2 <- d2 %>% mutate(across(contains("age_2"), as.numeric))
 # count(d2 %>% filter(parent1_age_2<25 & parent2_age_2<25 & gp1_age_2<25)) #0
 
 ### Removing data of participants who answered twice that their relatives died before the age of 25 and failed an attention test
-count(d2 %>% filter(gp1_age_2<25 & gp2_age_2<25 & attention_4 !="4" ))                   #0
-count(d2 %>% filter(gp1_age_2<25 & gp2_age_2<25 & attention_fruit!="Strongly agree"))      #0
-count(d2 %>% filter(gp1_age_2<25 & gp3_age_2<25 & attention_4 !="4" ))                   #1
-d2 <- d2[-c(which(d2$gp1_age_2<25 & d2$gp3_age_2<25 & d2$attention_4 !="4" )),]               # N = 581
-
-nrow(d2[which(d2$gp1_age_2<25 & d2$gp3_age_2<25 & d2$attention_fruit!="Strongly agree"),])      #0
-nrow(d2[which(d2$gp1_age_2<25 & d2$gp4_age_2<25 & d2$attention_4 !="4" ),])                   #0
-nrow(d2[which(d2$gp1_age_2<25 & d2$gp4_age_2<25 & d2$attention_fruit!="Strongly agree"),])      #0
-nrow(d2[which(d2$gp2_age_2<25 & d2$gp3_age_2<25 & d2$attention_4 !="4" ),])                   #1
-d2 <- d2[-c(which(d2$gp2_age_2<25 & d2$gp3_age_2<25 & d2$attention_4 !="4" )),]               # N = 580
-
-nrow(d2[which(d2$gp2_age_2<25 & d2$gp3_age_2<25 & d2$attention_fruit!="Strongly agree"),])      #0
-nrow(d2[which(d2$gp3_age_2<25 & d2$gp4_age_2<25 & d2$attention_4 !="4" ),])                   #0
-nrow(d2[which(d2$gp3_age_2<25 & d2$gp4_age_2<25 & d2$attention_fruit!="Strongly agree"),])      #0
-nrow(d2[which(d2$gp2_age_2<25 & d2$gp4_age_2<25 & d2$attention_4 !="4" ),])                   #0
-nrow(d2[which(d2$gp2_age_2<25 & d2$gp4_age_2<25 & d2$attention_fruit!="Strongly agree"),])      #0
-nrow(d2[which(d2$parent1_age_2<25 & d2$gp1_age_2<25 & d2$attention_4 !="4"),])                #0
-nrow(d2[which(d2$parent1_age_2<25 & d2$gp1_age_2<25 & d2$attention_fruit!="Strongly agree"),])  #0
-nrow(d2[which(d2$parent1_age_2<25 & d2$parent2_age_2<25 & d2$attention_4 !="4" ),])           #1
-d2 <- d2[-c(which(d2$parent1_age_2<25 & d2$parent2_age_2<25 & d2$attention_4 !="4" )),]       # N = 579
-
-nrow(d2[which(d2$parent1_age_2<25 & d2$parent2_age_2<25 & d2$attention_fruit !="Strongly agree" ),])  #0
-nrow(d2[which(d2$parent1_age_2<25 & d2$gp2_age_2<25 & d2$attention_4 !="4" ),])               #1
-d2 <- d2[-c(which(d2$parent1_age_2<25 & d2$gp2_age_2<25 & d2$attention_4 !="4")),]            # N = 578, 583 without first triage
-
-nrow(d2[which(d2$parent1_age_2<25 & d2$gp2_age_2<25 & d2$attention_fruit!="Strongly agree"),])  #0
+# count(d2 %>% filter(gp1_age_2<25 & gp2_age_2<25 & attention_4 !="4" ))                   #0
+# count(d2 %>% filter(gp1_age_2<25 & gp2_age_2<25 & attention_fruit!="Strongly agree"))      #0
+# count(d2 %>% filter(gp1_age_2<25 & gp3_age_2<25 & attention_4 !="4" ))                   #1
+# d2 <- d2[-c(which(d2$gp1_age_2<25 & d2$gp3_age_2<25 & d2$attention_4 !="4" )),]               # N = 581
+# 
+# nrow(d2[which(d2$gp1_age_2<25 & d2$gp3_age_2<25 & d2$attention_fruit!="Strongly agree"),])      #0
+# nrow(d2[which(d2$gp1_age_2<25 & d2$gp4_age_2<25 & d2$attention_4 !="4" ),])                   #0
+# nrow(d2[which(d2$gp1_age_2<25 & d2$gp4_age_2<25 & d2$attention_fruit!="Strongly agree"),])      #0
+# nrow(d2[which(d2$gp2_age_2<25 & d2$gp3_age_2<25 & d2$attention_4 !="4" ),])                   #1
+# d2 <- d2[-c(which(d2$gp2_age_2<25 & d2$gp3_age_2<25 & d2$attention_4 !="4" )),]               # N = 580
+# 
+# nrow(d2[which(d2$gp2_age_2<25 & d2$gp3_age_2<25 & d2$attention_fruit!="Strongly agree"),])      #0
+# nrow(d2[which(d2$gp3_age_2<25 & d2$gp4_age_2<25 & d2$attention_4 !="4" ),])                   #0
+# nrow(d2[which(d2$gp3_age_2<25 & d2$gp4_age_2<25 & d2$attention_fruit!="Strongly agree"),])      #0
+# nrow(d2[which(d2$gp2_age_2<25 & d2$gp4_age_2<25 & d2$attention_4 !="4" ),])                   #0
+# nrow(d2[which(d2$gp2_age_2<25 & d2$gp4_age_2<25 & d2$attention_fruit!="Strongly agree"),])      #0
+# nrow(d2[which(d2$parent1_age_2<25 & d2$gp1_age_2<25 & d2$attention_4 !="4"),])                #0
+# nrow(d2[which(d2$parent1_age_2<25 & d2$gp1_age_2<25 & d2$attention_fruit!="Strongly agree"),])  #0
+# nrow(d2[which(d2$parent1_age_2<25 & d2$parent2_age_2<25 & d2$attention_4 !="4" ),])           #1
+# d2 <- d2[-c(which(d2$parent1_age_2<25 & d2$parent2_age_2<25 & d2$attention_4 !="4" )),]       # N = 579
+# 
+# nrow(d2[which(d2$parent1_age_2<25 & d2$parent2_age_2<25 & d2$attention_fruit !="Strongly agree" ),])  #0
+# nrow(d2[which(d2$parent1_age_2<25 & d2$gp2_age_2<25 & d2$attention_4 !="4" ),])               #1
+# d2 <- d2[-c(which(d2$parent1_age_2<25 & d2$gp2_age_2<25 & d2$attention_4 !="4")),]            # N = 578, 583 without first triage
+# 
+# nrow(d2[which(d2$parent1_age_2<25 & d2$gp2_age_2<25 & d2$attention_fruit!="Strongly agree"),])  #0
 
 summary(d2$parent1_age_2)
 summary(d2$parent2_age_2)
@@ -185,7 +209,7 @@ d2 %>%
   summarise(across(contains("age_2"), ~mean(.x, na.rm = TRUE)))                                             # N = 563
 
   ### Ejections to add: lack of variability in answers
-d3 <- d2[which(d2$status=="REJECTED"),] #3 
+d3 <- d2[which(d2$status=="REJECTED"),] #8 
 
 ###### Recoding of character variables into numeric variables #####
 
@@ -543,12 +567,12 @@ count(d2 %>% filter(n_deaths == 4))/(582-17) #26% had 4 deaths in their family
 count(d2 %>% filter(n_deaths >= 5))/(582-17) # 45% had 5 to 6 deaths in their family
 
 d2 <- d2 %>% mutate(
-  n_deaths = case_when(
+  n_deaths_cat = case_when(
     n_deaths <= 3 ~ "0-3 deaths",
     n_deaths == 4 ~ "4 deaths",
     n_deaths >= 5 ~ "5-6 deaths"),
 )
-table(d2$n_deaths)
+table(d2$n_deaths_cat)
 
   ### Creation of sum of premature deaths within the family
 d2 <- d2 %>% mutate(
@@ -665,9 +689,23 @@ d2$Q29 <- NULL
 d2$Q30 <- NULL
 d2$Q31 <- NULL
 
+    #### CONTROLLABILITY
+for (i in 1:nrow(d2)){
+  d2$controllability[i] <- mean(c(d2$parent1_control_1[i],d2$parent2_control_1[i],d2$gp1_control_1[i],d2$gp2_control_1[i],d2$gp3_control_1[i],d2$gp4_control_1[i]), na.rm=TRUE)
+}
+summary(d2$controllability)
+hist(d2$controllability)
+
+    #### CLOSENESS
+for (i in 1:nrow(d2)){
+  d2$closeness[i] <- mean(c(d2$parent1_close_1[i],d2$parent2_close_1[i],d2$gp1_close_1[i],d2$gp2_close_1[i],d2$gp3_close_1[i],d2$gp4_close_1[i]), na.rm=TRUE)
+}
+summary(d2$closeness)
+hist(d2$closeness)
+
   #### Data transformations ####
 
-d3 <- d2 %>% filter(YPLL_sum < mean(d2$YPLL_sum, na.rm = TRUE) + 2*sd(d2$YPLL_sum,na.rm=TRUE)) 
+# d3 <- d2 %>% filter(YPLL_sum < mean(d2$YPLL_sum, na.rm = TRUE) + 3*sd(d2$YPLL_sum,na.rm=TRUE)) 
 # removes 14 participants with a YPLL_sum > 121,8
 # equivalent of having all relatives who died before the age of 55
 # also removes the 184 NA --> 384 left

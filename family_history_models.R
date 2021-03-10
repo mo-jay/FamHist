@@ -1,33 +1,63 @@
 # Data analysis script for 'Premature mortality and timing of your life: An exploratory correlational study'
 # Mona Joly and colleagues
-# 18/02/21
+# 10/03/21
 
 rm(list=ls())
-#install.packages("tidyverse")
-if(!require(tidyverse)) install.packages("tidyverse")
-if(!require(tidyverse)) install.packages("tidylog")
-if(!require(tidyverse)) install.packages("rmarkdown")
-if(!require(tidyverse)) install.packages("multilevel")
-if(!require(tidyverse)) install.packages("bda")
-if(!require(tidyverse)) install.packages("lme4")
-if(!require(sjlabelled)) install.packages("sjlabelled")
-if(!require(sjmisc)) install.packages("sjmisc")
-if(!require(sjstats)) install.packages("sjstats")
-if(!require(ggeffects)) install.packages("ggeffects")
-if(!require(sjPlot)) install.packages("sjPlot")
-if(!require(effects)) install.packages("effects")
-library(tidyverse)
-library(tidylog)
-library(rmarkdown)
+
+### Loading required packages ####
+
+if(!require(tidyverse)){
+  install.packages("tidyverse")
+  library(tidyverse)
+}
+if(!require(tidylog)){ 
+  install.packages("tidylog")
+  library(tidylog)
+}
+if(!require(rmarkdown)){
+  install.packages("rmarkdown")
+  library(rmarkdown)
+}
+if(!require(multilevel)){
+  install.packages("multilevel")
+  library(multilevel)
+}                           # for sobel test
+if(!require(bda)){
+  install.packages("bda")
+  library(bda)
+}                           # another way to calculate sobel test
+# if(!require(lme4)) install.packages("lme4") # for mixed-effects models
+if(!require(sjlabelled)){
+  install.packages("sjlabelled")
+  library(sjlabelled)
+}                           # all the sj**** : for graphical representation
+if(!require(sjmisc)) {
+  install.packages("sjmisc")
+  library(sjmisc)
+}
+if(!require(sjstats)){
+  install.packages("sjstats")
+  library(sjstats)
+}
+if(!require(ggeffects)){
+  install.packages("ggeffects")
+  library(ggeffects)
+}
+if(!require(sjPlot)) {
+  install.packages("sjPlot")
+  library(sjPlot)
+}
+if(!require(effects)){
+  install.packages("effects")
+  library(effects)
+}
 # library(e1071)      # to calculate skewness
 # library(dlookr)     # to transform data
 # library(ggpubr)     # for density plots
-library(car)        # for qqPlots
-library(multilevel) # for sobel test
-library(bda)        # another way to calculate mediation
+# library(car)        # for qqPlots
 # library(lme4)
-library(effects)
-library(sjPlot)
+
+### Loading the data ####
 
 # setwd("/Users/monou/Nextcloud/Family history questionnaire/Data analysis") # Mac France Mona
 # setwd("/Users/Monouille/Nextcloud/Shared/HSI/Family history questionnaire/Data analysis/FamHist") # Macbook Mona
@@ -35,26 +65,79 @@ library(sjPlot)
 d <- read.table("data_famhist.txt",dec=",",sep="\t",header=TRUE)        # Read final data
 
 lapply(d, class)
-cols.num <- c("look_after_health_log","look_after_health_sqrt","personal_income")
+cols.num <- c("look_after_health_log","look_after_health_sqrt","personal_income","controllability","closeness")
 d[cols.num] <- lapply(d[cols.num],as.numeric)
 sapply(d[cols.num],class)
 cols.factor <- c("checkup","breastfeed_length","YPLL_dummy","patience_score_bi")
 d[cols.factor] <- lapply(d[cols.factor],as.factor)
 sapply(d[cols.factor],class)
 
-d3 <- d %>% filter(YPLL_sum < mean(YPLL_sum, na.rm = TRUE) + 2*sd(YPLL_sum,na.rm=TRUE)) 
-# d4 <- d3%>% filter(age > 30)
+# d3 <- d %>% filter(YPLL_sum < mean(YPLL_sum, na.rm = TRUE) + 2*sd(YPLL_sum,na.rm=TRUE)) 
+d3 <- d[-c(which(d$parent1_age_2 == 19 | d$parent2_age_2 == 19 | d$gp1_age_2 == 19 | d$gp2_age_2 == 19 | d$gp3_age_2 == 19 | d$gp4_age_2 == 19)),]
+d4 <- d3%>% filter(attention_4 ==4) 
+d5 <- d3%>% filter(age >= 30)
+
+cor.test(d3$age,d3$YPLL_sum)
+plot(d3$age,d3$YPLL_sum)
+cor.test(d5$age,d5$YPLL_sum)
+
+fig1 = ggplot(d5, aes(x=age, y=YPLL_sum)) + 
+  theme_bw() + 
+  geom_point() + 
+  geom_smooth(method="lm") +
+  #facet_wrap(~gender) +
+  xlab("age") + 
+  ylab("YPLL sum")
+fig1
 
 ################################
 ######## MAIN ANALYSIS #########
 ################################
 
-#####################################
 ######## Looking after health #######
 #####################################
+### Choosing the right transformations of the variables based on hist of residuals ####
 
-lm_health1 <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender,data=d3)
+lm1 <- glm(look_after_health ~ scale(YPLL_sum) + age + gender + ethnicity,data=d3)
+hist(lm1$residuals) # right-skewed
+
+lm2 <- glm(log(look_after_health+1) ~ scale(YPLL_sum) + age + gender + ethnicity,data=d3)
+hist(lm2$residuals) # even more right-skewed
+
+lm3 <- glm(sqrt(look_after_health) ~ scale(YPLL_sum) + age + gender + ethnicity,data=d3)
+hist(lm3$residuals) # still worse than lm1
+
+lm4 <- glm(look_after_health_sqrt ~ scale(YPLL_sum) + age + gender + ethnicity,data=d3)
+hist(lm4$residuals) # looks really great (with sqrt(max(x+1)-x))
+
+lm5 <- glm(look_after_health_log ~ scale(YPLL_sum) + age + gender + ethnicity,data=d3)
+hist(lm5$residuals) # looks maybe worse than lm1, becomes left-skewed
+
+# --> the best look_after_health transformation if look_after_health_sqrt (lm4)
+
+lm6 <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d3)
+hist(lm6$residuals) # looks better than lm4, but not super significantly. 
+summary(lm6)
+summary(lm4)
+
+lm7 <- glm(look_after_health_sqrt ~ scale(sqrt(YPLL_sum)) + age + gender + ethnicity,data=d3)
+hist(lm7$residuals) # looks comparable to lm6, so might as well opt for log
+plot(lm7)
+
+plot(lm4)
+plot(lm4$residuals ~ lm4$fitted.values) #shotgun pattern
+plot(lm6$residuals ~ lm6$fitted.values) # slightly better, but not very obvious
+
+lm8 <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d4) # without the ones who didn't reply 4 at the attention task
+plot(lm8)
+hist(lm8$residuals)
+summary(lm8)
+
+### Models ####
+
+lm_health1 <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d3)
 summary(lm_health1)
+
 # Coefficients:
 #                           Estimate Std. Error t value Pr(>|t|)    
 # (Intercept)              -5.243788   0.382191 -13.720  < 2e-16 ***
@@ -69,14 +152,17 @@ summary(lm_health1)
 
 # using d or non-logged variables doesn't change much.
 
+lm_health1b <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d5)
+summary(lm_health1b)
+
 plot_model(lm_health1, type="est", show.values = TRUE)
 plot_model(lm_health1, type="pred",terms=c("YPLL_sum","age")) # interesting to see the effect is the same at all ages
 
 lm_health_dummy1 <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + YPLL_dummy + age + gender,data=d3)
-summary(lm_health_dummy2)
+summary(lm_health_dummy1)
 # slightly diminishes the effect of YPLL_sum
 
-lm_health2 <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + scale(log(personal_income)) + scale(SES_subj), data=d3)
+lm_health2 <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj), data=d3)
 summary(lm_health2)
 # Coefficients:
 #                              Estimate Std. Error t value Pr(>|t|)    
@@ -95,7 +181,7 @@ plot_model(lm_health2, type="pred",terms="YPLL_sum")
 # White ppl take 0.40 sd less care of their health
 # More affluent people take better care of their health (0.1 sd more)
 
-lm_health3 <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + scale(log(personal_income)) + scale(SES_subj) + scale(stress), data=d3)
+lm_health3 <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress), data=d3)
 summary(lm_health3)
 # Coefficients:
 #                              Estimate Std. Error t value Pr(>|t|)    
@@ -158,7 +244,7 @@ fig1 = ggplot(d3, aes(x=YPLL_sum, y=patience_score)) +
   ylab("Patience score")
 fig1
 
-lm_discounting1 <- glm(patience_score ~ scale(log(YPLL_sum+1)) + age + gender,data=d3)
+lm_discounting1 <- glm(patience_score ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d3)
 summary(lm_discounting1)
 # Coefficients:
 #                           Estimate Std. Error t value Pr(>|t|)    
@@ -167,7 +253,7 @@ summary(lm_discounting1)
 # age                       0.011517   0.003362   3.426  0.00068 ***
 # genderMale                0.066023   0.101458   0.651  0.51561    
 
-lm_discounting2 <- glm(patience_score ~ scale(log(YPLL_sum+1))*gender + age,data=d3)
+lm_discounting2 <- glm(patience_score ~ scale(log(YPLL_sum+1))*gender + age + ethnicity,data=d3)
 summary(lm_discounting2)
 # Coefficients:
 #                                      Estimate Std. Error t value Pr(>|t|)    
@@ -183,7 +269,7 @@ summary(lm_discounting2)
 plot_model(lm_discounting2, type="est")
 plot_model(lm_discounting2, type="pred",terms=c("YPLL_sum","gender")) 
 
-lm_discounting4 <- glm(patience_score ~ scale(log(YPLL_sum+1)) + age + gender + scale(log(personal_income)) + scale(SES_subj),data=d3)
+lm_discounting4 <- glm(patience_score ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d3)
 summary(lm_discounting4)
 # Coefficients:
 #                              Estimate Std. Error t value Pr(>|t|)   
@@ -196,7 +282,7 @@ summary(lm_discounting4)
 
 # Positive effect of SES on patience (conversely on delay discounting). Yay
 
-lm_discounting5 <- glm(patience_score ~ scale(log(YPLL_sum+1))*gender + age + scale(log(personal_income)) + scale(SES_subj),data=d3)
+lm_discounting5 <- glm(patience_score ~ scale(log(YPLL_sum+1))*gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d3)
 summary(lm_discounting5)
 #                                     Estimate Std. Error t value Pr(>|t|)   
 # (Intercept)                         -0.248058   0.220680  -1.124  0.26171   
@@ -216,7 +302,7 @@ summary(lm_discounting5)
 #plot_model(lm_discounting5, type="est",show.values = TRUE)
 #plot_model(lm_discounting5, type="pred",terms=c("YPLL_sum","gender")) 
 
-lm_discounting6 <- glm(patience_score ~ scale(log(YPLL_sum+1)) + gender + age + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d3)
+lm_discounting6 <- glm(patience_score ~ scale(log(YPLL_sum+1)) + gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d3)
 summary(lm_discounting6)
 # Coefficients:
 #                             Estimate Std. Error t value Pr(>|t|)
@@ -235,7 +321,7 @@ summary(lm_discounting6)
 plot_model(lm_discounting6, type="est",show.values = TRUE)
 plot_model(lm_discounting6, type="pred",terms="YPLL_sum") 
 
-lm_discounting7 <- glm(patience_score ~ scale(log(YPLL_sum+1))*gender + age + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d)
+lm_discounting7 <- glm(patience_score ~ scale(log(YPLL_sum+1))*gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d)
 summary(lm_discounting7)
 # Coefficients:
 #                                     Estimate Std. Error t value Pr(>|t|)    
@@ -669,6 +755,28 @@ plot_model(lm_smoker7, type = "pred", terms = "n_prem")
 # lm_breastfeed <- glm(breastfeed_length ~ scale(YPLL_sqrt) + age + ethnicity, data=d3)
 # summary(lm_breastfeed) # no effect
 
+####### Effect of controllability and closeness of the age of death ####
+### on effort in looking after health
+lm_health_control <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress) + scale(controllability), data=d3)
+summary(lm_health_control)
+# a higher controllability means "they could have done more to look after their health"
+# The more people feel their dead relatives were responsible for their death, the more they look after their health
+# The more people feel their relatives' death was uncontrollable, the less they look after their health
 
+plot_model(lm_health_control, type="est",show.values=TRUE)
+plot_model(lm_health_control, type="pred",terms="controllability") 
+plot(d3$controllability,d3$look_after_health)
+hist(d3$controllability)
+d3$n_deaths
 
+lm_health_control_close <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress) + scale(controllability) + scale(closeness), data=d3)
+summary(lm_health_control_close) # no impact of closeness to the relative
+
+### on temporal discounting
+lm_patience_control <- glm(patience_score ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress) + scale(controllability), data=d3)
+summary(lm_patience_control) # no impact on future discounting mrmrm
+
+lm_patience_control_close <- glm(patience_score ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress) + scale(controllability) + scale(closeness), data=d3)
+summary(lm_patience_control_close) # significant impact of closeness!
+# The more the participants felt close to their relatives who died, the less patient they are --> the more they discount the future
 
