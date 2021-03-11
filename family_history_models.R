@@ -76,10 +76,13 @@ sapply(d[cols.factor],class)
 d3 <- d[-c(which(d$parent1_age_2 == 19 | d$parent2_age_2 == 19 | d$gp1_age_2 == 19 | d$gp2_age_2 == 19 | d$gp3_age_2 == 19 | d$gp4_age_2 == 19)),]
 d4 <- d3%>% filter(attention_4 ==4) 
 d5 <- d3%>% filter(age >= 30)
+d6 <- d3 %>% filter (age >=40 & age <= 60)
 
 cor.test(d3$age,d3$YPLL_sum)
 plot(d3$age,d3$YPLL_sum)
 cor.test(d5$age,d5$YPLL_sum)
+cor.test(d6$age,d6$YPLL_sum)
+plot(d6$age,d6$YPLL_sum)
 
 fig1 = ggplot(d5, aes(x=age, y=YPLL_sum)) + 
   theme_bw() + 
@@ -93,10 +96,13 @@ fig1
 ################################
 ######## MAIN ANALYSIS #########
 ################################
-
 ######## Looking after health #######
 #####################################
 ### Choosing the right transformations of the variables based on hist of residuals ####
+
+hist(d3$look_after_health)
+hist(d3$YPLL_sum)
+plot(lm1)
 
 lm1 <- glm(look_after_health ~ scale(YPLL_sum) + age + gender + ethnicity,data=d3)
 hist(lm1$residuals) # right-skewed
@@ -125,6 +131,7 @@ hist(lm7$residuals) # looks comparable to lm6, so might as well opt for log
 plot(lm7)
 
 plot(lm4)
+plot(lm6)
 plot(lm4$residuals ~ lm4$fitted.values) #shotgun pattern
 plot(lm6$residuals ~ lm6$fitted.values) # slightly better, but not very obvious
 
@@ -153,14 +160,16 @@ summary(lm_health1)
 # using d or non-logged variables doesn't change much.
 
 lm_health1b <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d5)
-summary(lm_health1b)
+summary(lm_health1b) # exactly the same
+
+lm_health1c <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d6)
+summary(lm_health1c) # the effect of age loses its significance but the effect of YPLL_sum remains comparable
 
 plot_model(lm_health1, type="est", show.values = TRUE)
 plot_model(lm_health1, type="pred",terms=c("YPLL_sum","age")) # interesting to see the effect is the same at all ages
 
 lm_health_dummy1 <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + YPLL_dummy + age + gender,data=d3)
-summary(lm_health_dummy1)
-# slightly diminishes the effect of YPLL_sum
+summary(lm_health_dummy1) # pretty similar
 
 lm_health2 <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj), data=d3)
 summary(lm_health2)
@@ -174,11 +183,16 @@ summary(lm_health2)
 # scale(SES_subj)              0.262150   0.093806   2.795 0.005465 ** 
 # AIC = 1497
 
+lm_health2b <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj), data=d5)
+summary(lm_health2b) # diminishes the effect of SES_subj and makes personal income significant, doesn't change YPLL_sum at all
+
+lm_health2c <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj), data=d6)
+summary(lm_health2c) # removes the effect of subj SES, doesn't change YPLL sum
+
 plot_model(lm_health2, type="est",show.values=TRUE)
 plot_model(lm_health2, type="pred",terms="YPLL_sum") 
 
 # The older ppl are, the more they look after their health: for one additional year, they take 0.01sd more care of their health
-# White ppl take 0.40 sd less care of their health
 # More affluent people take better care of their health (0.1 sd more)
 
 lm_health3 <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress), data=d3)
@@ -197,6 +211,12 @@ summary(lm_health3)
 # scale(SES_subj)              0.231541   0.094590   2.448  0.01483 *  
 # scale(stress)               -0.191629   0.093433  -2.051  0.04097 * 
 # AIC = 1494
+
+lm_health3b <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress), data=d5)
+summary(lm_health3b) # SES subj loses its significance whereas personal income becomes significant, no other change
+
+lm_health3c <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress), data=d6)
+summary(lm_health3c) # nothing is significant, YPLL sum very comparable
 
 plot_model(lm_health3, type="est",show.values = TRUE)
 plot_model(lm_health3, type="pred",terms=c("YPLL_sum","SES_subj"))
@@ -227,6 +247,13 @@ mediation.test(d$SES_subj,d$stress,d$look_after_health)
 
 lm_health4 <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + scale(log(personal_income)) + scale(SES_subj) + scale(stress)+ scale(log(extrinsic_risk+1)), data=d3)
 summary(lm_health4)
+
+lm_health4b <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + scale(log(personal_income)) + scale(SES_subj) + scale(stress)+ scale(log(extrinsic_risk+1)), data=d5)
+summary(lm_health4b) # subj SES loses its significance, no other change
+
+lm_health4c <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + scale(log(personal_income)) + scale(SES_subj) + scale(stress)+ scale(log(extrinsic_risk+1)), data=d6)
+summary(lm_health4c) # everything loses its significance
+
 plot_model(lm_health4, type="est",show.values = TRUE)
 
 mediation.test(d$extrinsic_risk,d$YPLL_sum,d$look_after_health)
@@ -253,6 +280,12 @@ summary(lm_discounting1)
 # age                       0.011517   0.003362   3.426  0.00068 ***
 # genderMale                0.066023   0.101458   0.651  0.51561    
 
+lm_discounting1b <- glm(patience_score ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d5)
+summary(lm_discounting1b) # no change
+
+lm_discounting1c <- glm(patience_score ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d6)
+summary(lm_discounting1c) # no change (except for the effect of age which vanishes)
+
 lm_discounting2 <- glm(patience_score ~ scale(log(YPLL_sum+1))*gender + age + ethnicity,data=d3)
 summary(lm_discounting2)
 # Coefficients:
@@ -265,6 +298,12 @@ summary(lm_discounting2)
 
 # When we add it the interaction with gender, YPLL_sum becomes significant.
 # (It's stronger with d)
+
+lm_discounting2b <- glm(patience_score ~ scale(log(YPLL_sum+1))*gender + age + ethnicity,data=d5)
+summary(lm_discounting2b) # we lose the effect for women and the interaction with gender
+
+lm_discounting2c <- glm(patience_score ~ scale(log(YPLL_sum+1))*gender + age + ethnicity,data=d6)
+summary(lm_discounting2c) # all the effects disappear
 
 plot_model(lm_discounting2, type="est")
 plot_model(lm_discounting2, type="pred",terms=c("YPLL_sum","gender")) 
@@ -282,6 +321,12 @@ summary(lm_discounting4)
 
 # Positive effect of SES on patience (conversely on delay discounting). Yay
 
+lm_discounting4b <- glm(patience_score ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d5)
+summary(lm_discounting4b) #stronger effect of subj SES
+
+lm_discounting4c <- glm(patience_score ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d6)
+summary(lm_discounting4c) # only the effect of subj SES remains
+
 lm_discounting5 <- glm(patience_score ~ scale(log(YPLL_sum+1))*gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d3)
 summary(lm_discounting5)
 #                                     Estimate Std. Error t value Pr(>|t|)   
@@ -298,6 +343,9 @@ summary(lm_discounting5)
 # scale(log(YPLL_sum + 1)):genderMale  0.196332   0.101373   1.937  0.05354 . 
 
 # Same, but with the Holm-Bonferroni correction the effect will no longer be significant
+
+lm_discounting5b <- glm(patience_score ~ scale(log(YPLL_sum+1))*gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d5)
+summary(lm_discounting5b) # again, stronger effect of subj SES but no effect for women or interaction with gender
 
 #plot_model(lm_discounting5, type="est",show.values = TRUE)
 #plot_model(lm_discounting5, type="pred",terms=c("YPLL_sum","gender")) 
@@ -318,10 +366,16 @@ summary(lm_discounting6)
 # scale(SES_subj)              1.49236    0.57017   2.617 0.009208 ** 
 # scale(stress)                0.94698    0.57375   1.651 0.099652 . 
 
+lm_discounting6b <- glm(patience_score ~ scale(log(YPLL_sum+1)) + gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d5)
+summary(lm_discounting6b) # removes the effect of stress, SES_subj becomes slightly stronger
+
+lm_discounting6c <- glm(patience_score ~ scale(log(YPLL_sum+1)) + gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d6)
+summary(lm_discounting6c) # only the effect of subj SES remains
+
 plot_model(lm_discounting6, type="est",show.values = TRUE)
 plot_model(lm_discounting6, type="pred",terms="YPLL_sum") 
 
-lm_discounting7 <- glm(patience_score ~ scale(log(YPLL_sum+1))*gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d)
+lm_discounting7 <- glm(patience_score ~ scale(log(YPLL_sum+1))*gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d3)
 summary(lm_discounting7)
 # Coefficients:
 #                                     Estimate Std. Error t value Pr(>|t|)    
@@ -340,7 +394,6 @@ summary(lm_discounting7)
 
 plot_model(lm_discounting7, type="est",show.values = TRUE)
 plot_model(lm_discounting7, type="pred",terms=c("YPLL_sum","gender")) 
-
 
 
 #################################
@@ -762,6 +815,9 @@ summary(lm_health_control)
 # a higher controllability means "they could have done more to look after their health"
 # The more people feel their dead relatives were responsible for their death, the more they look after their health
 # The more people feel their relatives' death was uncontrollable, the less they look after their health
+
+lm_health_control2 <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1))*controllability + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress), data=d3)
+summary(lm_health_control2)
 
 plot_model(lm_health_control, type="est",show.values=TRUE)
 plot_model(lm_health_control, type="pred",terms="controllability") 
