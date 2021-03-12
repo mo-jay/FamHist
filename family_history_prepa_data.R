@@ -611,12 +611,12 @@ count(d2 %>% filter(n_prem > 1 & n_prem < 4))/(582-184) #43% had 2 or 3 prematur
 count(d2 %>% filter(n_prem >= 4))/(582-184) # 21% had 4 to 6 premature deaths in their family
 
 d2 <- d2 %>% mutate(
-  n_prem = case_when(
+  n_prem_cat = case_when(
     n_prem <= 1 ~ "0-1 prem deaths",
     n_prem > 1 & n_prem < 4 ~ "2-3 prem deaths",
     n_prem >= 4 ~ "4-6 prem deaths"),
 )
-table(d2$n_prem)
+table(d2$n_prem_cat)
 
     ####### PATIENCE SCORE
 
@@ -656,6 +656,13 @@ d2 <- d2 %>% mutate(
     Q5  == "In 12 months" ~ 32),
 ) 
 summary(d2$patience_score)
+hist(d2$patience_score)
+
+d2 <- d2 %>% mutate(
+  time_discounting = 33-patience_score
+)
+summary(d2$time_discounting)
+hist(d2$time_discounting)
 
 d2$Q1 <- NULL
 d2$Q2 <- NULL

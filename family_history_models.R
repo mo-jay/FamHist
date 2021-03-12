@@ -51,6 +51,12 @@ if(!require(effects)){
   install.packages("effects")
   library(effects)
 }
+
+if(!require(ggplot2)){
+  install.packages("ggplot2")
+  library(ggplot2)
+}
+
 # library(e1071)      # to calculate skewness
 # library(dlookr)     # to transform data
 # library(ggpubr)     # for density plots
@@ -65,14 +71,14 @@ if(!require(effects)){
 d <- read.table("data_famhist.txt",dec=",",sep="\t",header=TRUE)        # Read final data
 
 lapply(d, class)
-cols.num <- c("look_after_health_log","look_after_health_sqrt","personal_income","controllability","closeness")
+cols.num <- c("time_discounting","look_after_health_log","look_after_health_sqrt","personal_income","controllability","closeness")
 d[cols.num] <- lapply(d[cols.num],as.numeric)
 sapply(d[cols.num],class)
-cols.factor <- c("checkup","breastfeed_length","YPLL_dummy","patience_score_bi")
+cols.factor <- c("gender","checkup","breastfeed_length","YPLL_dummy","patience_score_bi")
 d[cols.factor] <- lapply(d[cols.factor],as.factor)
 sapply(d[cols.factor],class)
 
-# d3 <- d %>% filter(YPLL_sum < mean(YPLL_sum, na.rm = TRUE) + 2*sd(YPLL_sum,na.rm=TRUE)) 
+d3b <- d %>% filter(YPLL_sum < mean(YPLL_sum, na.rm = TRUE) + 3*sd(YPLL_sum,na.rm=TRUE)) 
 d3 <- d[-c(which(d$parent1_age_2 == 19 | d$parent2_age_2 == 19 | d$gp1_age_2 == 19 | d$gp2_age_2 == 19 | d$gp3_age_2 == 19 | d$gp4_age_2 == 19)),]
 d4 <- d3%>% filter(attention_4 ==4) 
 d5 <- d3%>% filter(age >= 30)
@@ -262,16 +268,31 @@ mediation.test(d$extrinsic_risk,d$YPLL_sum,d$look_after_health)
 ####### PATIENCE SCORE #######
 ##############################
 
-fig1 = ggplot(d3, aes(x=YPLL_sum, y=patience_score)) + 
+fig1 = ggplot(d3, aes(x=YPLL_sum, y=time_discounting)) + 
   theme_bw() + 
   geom_point() + 
   geom_smooth(method="lm") +
   facet_wrap(~gender) +
   xlab("YPLL sum") + 
-  ylab("Patience score")
+  ylab("Time discounting")
 fig1
 
-lm_discounting1 <- glm(patience_score ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d3)
+
+lm1 <- glm(patience_score ~ scale(YPLL_sum) + age + gender + ethnicity,data=d3)
+hist(lm1$residuals)
+lm2 <- glm(patience_score ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d3)
+hist(lm2$residuals)
+lm3 <- glm(log(patience_score) ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d3)
+hist(lm3$residuals)
+lm4 <- glm(sqrt(patience_score) ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d3)
+hist(lm4$residuals)
+lm5 <- glm(1/(patience_score) ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d3)
+hist(lm5$residuals)
+# Nothing looks really good... Might as well keep lm2
+
+
+
+lm_discounting1 <- glm(time_discounting ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d3)
 summary(lm_discounting1)
 # Coefficients:
 #                           Estimate Std. Error t value Pr(>|t|)    
@@ -280,13 +301,13 @@ summary(lm_discounting1)
 # age                       0.011517   0.003362   3.426  0.00068 ***
 # genderMale                0.066023   0.101458   0.651  0.51561    
 
-lm_discounting1b <- glm(patience_score ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d5)
+lm_discounting1b <- glm(time_discounting ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d5)
 summary(lm_discounting1b) # no change
 
-lm_discounting1c <- glm(patience_score ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d6)
+lm_discounting1c <- glm(time_discounting ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d6)
 summary(lm_discounting1c) # no change (except for the effect of age which vanishes)
 
-lm_discounting2 <- glm(patience_score ~ scale(log(YPLL_sum+1))*gender + age + ethnicity,data=d3)
+lm_discounting2 <- glm(time_discounting ~ scale(log(YPLL_sum+1))*gender + age + ethnicity,data=d3)
 summary(lm_discounting2)
 # Coefficients:
 #                                      Estimate Std. Error t value Pr(>|t|)    
@@ -299,16 +320,16 @@ summary(lm_discounting2)
 # When we add it the interaction with gender, YPLL_sum becomes significant.
 # (It's stronger with d)
 
-lm_discounting2b <- glm(patience_score ~ scale(log(YPLL_sum+1))*gender + age + ethnicity,data=d5)
+lm_discounting2b <- glm(time_discounting ~ scale(log(YPLL_sum+1))*gender + age + ethnicity,data=d5)
 summary(lm_discounting2b) # we lose the effect for women and the interaction with gender
 
-lm_discounting2c <- glm(patience_score ~ scale(log(YPLL_sum+1))*gender + age + ethnicity,data=d6)
+lm_discounting2c <- glm(time_discounting ~ scale(log(YPLL_sum+1))*gender + age + ethnicity,data=d6)
 summary(lm_discounting2c) # all the effects disappear
 
 plot_model(lm_discounting2, type="est")
 plot_model(lm_discounting2, type="pred",terms=c("YPLL_sum","gender")) 
 
-lm_discounting4 <- glm(patience_score ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d3)
+lm_discounting4 <- glm(time_discounting ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d3)
 summary(lm_discounting4)
 # Coefficients:
 #                              Estimate Std. Error t value Pr(>|t|)   
@@ -321,13 +342,13 @@ summary(lm_discounting4)
 
 # Positive effect of SES on patience (conversely on delay discounting). Yay
 
-lm_discounting4b <- glm(patience_score ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d5)
+lm_discounting4b <- glm(time_discounting ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d5)
 summary(lm_discounting4b) #stronger effect of subj SES
 
-lm_discounting4c <- glm(patience_score ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d6)
+lm_discounting4c <- glm(time_discounting ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d6)
 summary(lm_discounting4c) # only the effect of subj SES remains
 
-lm_discounting5 <- glm(patience_score ~ scale(log(YPLL_sum+1))*gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d3)
+lm_discounting5 <- glm(time_discounting ~ scale(log(YPLL_sum+1))*gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d3)
 summary(lm_discounting5)
 #                                     Estimate Std. Error t value Pr(>|t|)   
 # (Intercept)                         -0.248058   0.220680  -1.124  0.26171   
@@ -344,13 +365,13 @@ summary(lm_discounting5)
 
 # Same, but with the Holm-Bonferroni correction the effect will no longer be significant
 
-lm_discounting5b <- glm(patience_score ~ scale(log(YPLL_sum+1))*gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d5)
+lm_discounting5b <- glm(time_discounting ~ scale(log(YPLL_sum+1))*gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d5)
 summary(lm_discounting5b) # again, stronger effect of subj SES but no effect for women or interaction with gender
 
 #plot_model(lm_discounting5, type="est",show.values = TRUE)
 #plot_model(lm_discounting5, type="pred",terms=c("YPLL_sum","gender")) 
 
-lm_discounting6 <- glm(patience_score ~ scale(log(YPLL_sum+1)) + gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d3)
+lm_discounting6 <- glm(time_discounting ~ scale(log(YPLL_sum+1)) + gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d3)
 summary(lm_discounting6)
 # Coefficients:
 #                             Estimate Std. Error t value Pr(>|t|)
@@ -366,16 +387,16 @@ summary(lm_discounting6)
 # scale(SES_subj)              1.49236    0.57017   2.617 0.009208 ** 
 # scale(stress)                0.94698    0.57375   1.651 0.099652 . 
 
-lm_discounting6b <- glm(patience_score ~ scale(log(YPLL_sum+1)) + gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d5)
+lm_discounting6b <- glm(time_discounting ~ scale(log(YPLL_sum+1)) + gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d5)
 summary(lm_discounting6b) # removes the effect of stress, SES_subj becomes slightly stronger
 
-lm_discounting6c <- glm(patience_score ~ scale(log(YPLL_sum+1)) + gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d6)
+lm_discounting6c <- glm(time_discounting ~ scale(log(YPLL_sum+1)) + gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d6)
 summary(lm_discounting6c) # only the effect of subj SES remains
 
 plot_model(lm_discounting6, type="est",show.values = TRUE)
 plot_model(lm_discounting6, type="pred",terms="YPLL_sum") 
 
-lm_discounting7 <- glm(patience_score ~ scale(log(YPLL_sum+1))*gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d3)
+lm_discounting7 <- glm(time_discounting ~ scale(log(YPLL_sum+1))*gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d3)
 summary(lm_discounting7)
 # Coefficients:
 #                                     Estimate Std. Error t value Pr(>|t|)    
@@ -400,9 +421,8 @@ plot_model(lm_discounting7, type="pred",terms=c("YPLL_sum","gender"))
 ###### Secondary analyses #######
 #################################
 
-######### Alternative ways to measure the effect of (premature) death exposure within the family ######
-
-#### The number of deaths within the family
+######### Alternative ways to measure the effect of (premature) death exposure within the family
+#### The number of deaths within the family ####
   #### Its effect on looking after health ####
 lm_health_n <- glm(look_after_health_sqrt ~ n_deaths + gender + age + ethnicity,data=d)
 summary(lm_health_n)
@@ -442,7 +462,7 @@ AIC(lm_health_a) #2229
 plot_model(lm_health_n2, type="est")
 plot_model(lm_health_n2, type="pred",terms="n_deaths") 
 
-lm_health_n3 <- glm(look_after_health_sqrt ~ n_deaths + age + gender + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d)
+lm_health_n3 <- glm(look_after_health_sqrt ~ n_deaths + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d)
 summary(lm_health_n3)
 plot_model(lm_health_n3, type="est", show.values=TRUE)
 plot_model(lm_health_n3, type="pred",terms="n_deaths") 
@@ -459,8 +479,10 @@ summary(lm_discounting_n2) # only subjSES remains
 plot_model(lm_discounting_n2, type="est",show.values = T)
 plot_model(lm_discounting_n2, type="pred",terms="n_deaths")
 
-lm_discounting_n3 <- glm(patience_score ~ n_deaths*gender + age + scale(log(personal_income+1)) + scale(SES_subj)+ scale(stress),data=d)
-summary(lm_discounting_n3) # marginal effect of having more than 4 deaths in the family, bc of men with 5-6 deaths with a strong future discounting
+d$gender <- relevel(d$gender,ref="Female")
+
+lm_discounting_n3 <- glm(time_discounting ~ n_deaths*gender + age + scale(log(personal_income+1)) + scale(SES_subj)+ scale(stress),data=d)
+summary(lm_discounting_n3) # marginal effect of having more than 4 deaths in the family, bc of women with 5-6 deaths with a strong future discounting
 # count(d %>% filter(gender=="Male" & n_deaths=="5-6 deaths")) # 118 participants, not that few
 count(d %>% filter(gender=="Female" & n_deaths=="5-6 deaths")) # 137 participants
 
@@ -513,6 +535,8 @@ summary(lm_discounting_np5) # idem
 plot_model(lm_discounting_np5, type="est",show.values = T)
 plot_model(lm_discounting_np5, type="pred",terms="n_prem")
 
+
+#####
 ##### Does extrinsic mortality risk mediate the relationship between SES and looking after health? ####
 
 lm_SES_hb <-glm(look_after_health_sqrt ~ SES_subj + age + gender + ethnicity, data=d)
