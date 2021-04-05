@@ -1,6 +1,6 @@
 # Data analysis script for 'Premature mortality and timing of your life: An exploratory correlational study'
 # Mona Joly and colleagues
-# 10/03/21
+# 22/03/21
 
 rm(list=ls())
 
@@ -56,6 +56,32 @@ if(!require(ggplot2)){
   install.packages("ggplot2")
   library(ggplot2)
 }
+
+if(!require(robustbase)){
+  install.packages("robustbase")
+  library(robustbase)
+}
+
+if(!require(sandwich)){
+  install.packages("sandwich")
+  library(sandwich)
+}
+
+if(!require(lmtest)){
+  install.packages("lmtest")
+  library(lmtest)
+}
+
+if(!require(modelr)){
+  install.packages("modelr")
+  library(modelr)
+}
+
+if(!require(broom)){
+  install.packages("broom")
+  library(broom)
+}
+
 
 # library(e1071)      # to calculate skewness
 # library(dlookr)     # to transform data
@@ -148,7 +174,7 @@ summary(lm8)
 
 ### Models ####
 
-lm_health1 <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d3)
+lm_health1 <- glm(look_after_health ~ scale(YPLL_sum) + age + gender + ethnicity,data=d3)
 summary(lm_health1)
 
 # Coefficients:
@@ -165,6 +191,11 @@ summary(lm_health1)
 
 # using d or non-logged variables doesn't change much.
 
+bptest(lm_health1) # Well apparently we cannot reject the null that the variance of
+# the residuals is constant. So that's good.
+
+coeftest(lm_health1, vcov = vcovHC(lm_health1))
+
 lm_health1b <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d5)
 summary(lm_health1b) # exactly the same
 
@@ -177,7 +208,7 @@ plot_model(lm_health1, type="pred",terms=c("YPLL_sum","age")) # interesting to s
 lm_health_dummy1 <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + YPLL_dummy + age + gender,data=d3)
 summary(lm_health_dummy1) # pretty similar
 
-lm_health2 <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj), data=d3)
+lm_health2 <- glm(look_after_health ~ scale(YPLL_sum) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj), data=d3)
 summary(lm_health2)
 # Coefficients:
 #                              Estimate Std. Error t value Pr(>|t|)    
@@ -188,6 +219,11 @@ summary(lm_health2)
 # scale(log(personal_income))  0.100580   0.095084   1.058 0.290827    
 # scale(SES_subj)              0.262150   0.093806   2.795 0.005465 ** 
 # AIC = 1497
+
+bptest(lm_health2) # Well apparently we cannot reject the null that the variance of
+                   # the residuals is constant. So that's good.
+
+coeftest(lm_health2, vcov = vcovHC(lm_health2))
 
 lm_health2b <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj), data=d5)
 summary(lm_health2b) # diminishes the effect of SES_subj and makes personal income significant, doesn't change YPLL_sum at all
@@ -201,7 +237,7 @@ plot_model(lm_health2, type="pred",terms="YPLL_sum")
 # The older ppl are, the more they look after their health: for one additional year, they take 0.01sd more care of their health
 # More affluent people take better care of their health (0.1 sd more)
 
-lm_health3 <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress), data=d3)
+lm_health3 <- glm(look_after_health ~ scale(YPLL_sum) + age + gender + ethnicity + scale(personal_income) + scale(SES_subj) + scale(stress), data=d3)
 summary(lm_health3)
 # Coefficients:
 #                              Estimate Std. Error t value Pr(>|t|)    
@@ -217,6 +253,10 @@ summary(lm_health3)
 # scale(SES_subj)              0.231541   0.094590   2.448  0.01483 *  
 # scale(stress)               -0.191629   0.093433  -2.051  0.04097 * 
 # AIC = 1494
+
+bptest(lm_health3) # p=.11
+
+coeftest(lm_health3, vcov = vcovHC(lm_health3))
 
 lm_health3b <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress), data=d5)
 summary(lm_health3b) # SES subj loses its significance whereas personal income becomes significant, no other change
@@ -251,8 +291,12 @@ mediation.test(d$SES_subj,d$stress,d$look_after_health)
 # p.value  0.009231001  0.01005162  0.008445151
 # Stress mediates the relationship between looking after health and subjective SES  
 
-lm_health4 <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + scale(log(personal_income)) + scale(SES_subj) + scale(stress)+ scale(log(extrinsic_risk+1)), data=d3)
+lm_health4 <- glm(look_after_health ~ scale(YPLL_sum) + age + gender + scale(personal_income) + scale(SES_subj) + scale(stress)+ scale(extrinsic_risk), data=d3)
 summary(lm_health4)
+
+bptest(lm_health4) # p<.001
+
+coeftest(lm_health4, vcov = vcovHC(lm_health4))
 
 lm_health4b <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + scale(log(personal_income)) + scale(SES_subj) + scale(stress)+ scale(log(extrinsic_risk+1)), data=d5)
 summary(lm_health4b) # subj SES loses its significance, no other change
@@ -292,7 +336,7 @@ hist(lm5$residuals)
 
 
 
-lm_discounting1 <- glm(time_discounting ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d3)
+lm_discounting1 <- glm(time_discounting ~ scale(YPLL_sum) + age + gender + ethnicity,data=d3)
 summary(lm_discounting1)
 # Coefficients:
 #                           Estimate Std. Error t value Pr(>|t|)    
@@ -301,13 +345,16 @@ summary(lm_discounting1)
 # age                       0.011517   0.003362   3.426  0.00068 ***
 # genderMale                0.066023   0.101458   0.651  0.51561    
 
+bptest(lm_discounting1) # p=0.2
+coeftest(lm_discounting1, vcov = vcovHC(lm_discounting1))
+
 lm_discounting1b <- glm(time_discounting ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d5)
 summary(lm_discounting1b) # no change
 
 lm_discounting1c <- glm(time_discounting ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d6)
 summary(lm_discounting1c) # no change (except for the effect of age which vanishes)
 
-lm_discounting2 <- glm(time_discounting ~ scale(log(YPLL_sum+1))*gender + age + ethnicity,data=d3)
+lm_discounting2 <- glm(time_discounting ~ scale(YPLL_sum)*gender + age + ethnicity,data=d3)
 summary(lm_discounting2)
 # Coefficients:
 #                                      Estimate Std. Error t value Pr(>|t|)    
@@ -320,6 +367,9 @@ summary(lm_discounting2)
 # When we add it the interaction with gender, YPLL_sum becomes significant.
 # (It's stronger with d)
 
+bptest(lm_discounting2) # p<0.05
+coeftest(lm_discounting2, vcov = vcovHC(lm_discounting2))
+
 lm_discounting2b <- glm(time_discounting ~ scale(log(YPLL_sum+1))*gender + age + ethnicity,data=d5)
 summary(lm_discounting2b) # we lose the effect for women and the interaction with gender
 
@@ -329,7 +379,7 @@ summary(lm_discounting2c) # all the effects disappear
 plot_model(lm_discounting2, type="est")
 plot_model(lm_discounting2, type="pred",terms=c("YPLL_sum","gender")) 
 
-lm_discounting4 <- glm(time_discounting ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d3)
+lm_discounting4 <- glm(time_discounting ~ scale(YPLL_sum) + age + gender + ethnicity + scale(personal_income) + scale(SES_subj),data=d3)
 summary(lm_discounting4)
 # Coefficients:
 #                              Estimate Std. Error t value Pr(>|t|)   
@@ -342,13 +392,16 @@ summary(lm_discounting4)
 
 # Positive effect of SES on patience (conversely on delay discounting). Yay
 
+bptest(lm_discounting4) # p=0.35
+coeftest(lm_discounting4, vcov = vcovHC(lm_discounting4))
+
 lm_discounting4b <- glm(time_discounting ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d5)
 summary(lm_discounting4b) #stronger effect of subj SES
 
 lm_discounting4c <- glm(time_discounting ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d6)
 summary(lm_discounting4c) # only the effect of subj SES remains
 
-lm_discounting5 <- glm(time_discounting ~ scale(log(YPLL_sum+1))*gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d3)
+lm_discounting5 <- glm(time_discounting ~ scale(YPLL_sum)*gender + age + ethnicity + scale(personal_income) + scale(SES_subj),data=d3)
 summary(lm_discounting5)
 #                                     Estimate Std. Error t value Pr(>|t|)   
 # (Intercept)                         -0.248058   0.220680  -1.124  0.26171   
@@ -365,13 +418,16 @@ summary(lm_discounting5)
 
 # Same, but with the Holm-Bonferroni correction the effect will no longer be significant
 
+bptest(lm_discounting5) # p=0.09
+coeftest(lm_discounting5, vcov = vcovHC(lm_discounting5))
+
 lm_discounting5b <- glm(time_discounting ~ scale(log(YPLL_sum+1))*gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d5)
 summary(lm_discounting5b) # again, stronger effect of subj SES but no effect for women or interaction with gender
 
 #plot_model(lm_discounting5, type="est",show.values = TRUE)
 #plot_model(lm_discounting5, type="pred",terms=c("YPLL_sum","gender")) 
 
-lm_discounting6 <- glm(time_discounting ~ scale(log(YPLL_sum+1)) + gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d3)
+lm_discounting6 <- glm(time_discounting ~ scale(YPLL_sum) + gender + age + ethnicity + scale(personal_income) + scale(SES_subj) + scale(stress),data=d3)
 summary(lm_discounting6)
 # Coefficients:
 #                             Estimate Std. Error t value Pr(>|t|)
@@ -387,6 +443,9 @@ summary(lm_discounting6)
 # scale(SES_subj)              1.49236    0.57017   2.617 0.009208 ** 
 # scale(stress)                0.94698    0.57375   1.651 0.099652 . 
 
+bptest(lm_discounting6) # p=0.09
+coeftest(lm_discounting6, vcov = vcovHC(lm_discounting6))
+
 lm_discounting6b <- glm(time_discounting ~ scale(log(YPLL_sum+1)) + gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d5)
 summary(lm_discounting6b) # removes the effect of stress, SES_subj becomes slightly stronger
 
@@ -396,7 +455,7 @@ summary(lm_discounting6c) # only the effect of subj SES remains
 plot_model(lm_discounting6, type="est",show.values = TRUE)
 plot_model(lm_discounting6, type="pred",terms="YPLL_sum") 
 
-lm_discounting7 <- glm(time_discounting ~ scale(log(YPLL_sum+1))*gender + age + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d3)
+lm_discounting7 <- glm(time_discounting ~ scale(YPLL_sum)*gender + age + ethnicity + scale(personal_income) + scale(SES_subj) + scale(stress),data=d3)
 summary(lm_discounting7)
 # Coefficients:
 #                                     Estimate Std. Error t value Pr(>|t|)    
@@ -413,9 +472,13 @@ summary(lm_discounting7)
 # scale(stress)                        0.86678    0.57330   1.512 0.131376    
 # scale(log(YPLL_sum + 1)):genderMale  2.01989    1.05387   1.917 0.056022 .  
 
+bptest(lm_discounting7) # p=0.3
+coeftest(lm_discounting7, vcov = vcovHC(lm_discounting7))
+
 plot_model(lm_discounting7, type="est",show.values = TRUE)
 plot_model(lm_discounting7, type="pred",terms=c("YPLL_sum","gender")) 
 
+#d$gender <- relevel(d$gender,ref="Female")
 
 #################################
 ###### Secondary analyses #######
@@ -442,7 +505,7 @@ AIC(lm_health_n) #2232, not as good
 plot_model(lm_health_n, type="est")
 plot_model(lm_health_n, type="pred",terms="n_deaths")
 
-lm_health_n2 <- glm(look_after_health_sqrt ~ n_deaths + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d)
+lm_health_n2 <- glm(look_after_health_sqrt ~ n_deaths*age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d)
 summary(lm_health_n2)
 # Coefficients:
 #                              Estimate Std. Error t value Pr(>|t|)    
@@ -503,11 +566,13 @@ summary(lm_health_np2) # SES toujours vaillant
 
 plot_model(lm_health_np2, type="est")
 
-lm_health_np3 <- glm(look_after_health_sqrt ~ n_prem + age + gender + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d3)
+lm_health_np3 <- glm(look_after_health_sqrt ~ n_prem *age + gender + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d3)
 summary(lm_health_np3) # stress tambien
 
 plot_model(lm_health_np3, type="est", show.values = TRUE)
 plot_model(lm_health_np3, type="pred",terms="n_prem")
+
+plot(d$n_deaths,d$age)
 
   #### Its effect on patience score ####
 
@@ -536,7 +601,33 @@ plot_model(lm_discounting_np5, type="est",show.values = T)
 plot_model(lm_discounting_np5, type="pred",terms="n_prem")
 
 
-#####
+#### The youngest death experienced ####
+  #### Its effect on looking after health ####
+lm_health_youngest <- lmrob(look_after_health ~ youngest_death + gender + age + ethnicity + SES_subj + personal_income + stress + extrinsic_risk,data=d)
+summary(lm_health_youngest)
+
+plot_model(lm_health_youngest, type="est", show.values = TRUE)
+plot_model(lm_health_youngest, type="pred",terms="youngest_death") # interesting to see the effect is the same at all ages
+
+mediation.test(d$extrinsic_risk,d$youngest_death,d$look_after_health) #nope
+
+  #### Its effect on time discounting ####
+lm_discounting_youngest <- lmrob(time_discounting ~ youngest_death + gender + age + ethnicity + SES_subj + personal_income + stress + extrinsic_risk,data=d)
+summary(lm_discounting_youngest)
+
+plot_model(lm_discounting_youngest, type="est", show.values = TRUE)
+plot_model(lm_discounting_youngest, type="pred",terms="youngest_death") # interesting to see the effect is the same at all ages
+
+mediation.test(d$extrinsic_risk,d$youngest_death,d$time_discounting) #nope
+
+d$gender <- relevel(d$gender,ref="Male")
+
+lm_discounting_youngest_IA <- lmrob(time_discounting ~ youngest_death*gender + age + ethnicity + SES_subj + personal_income + stress + extrinsic_risk,data=d)
+summary(lm_discounting_youngest_IA)
+
+plot_model(lm_discounting_youngest_IA, type="est", show.values = TRUE)
+plot_model(lm_discounting_youngest_IA, type="pred",terms="youngest_death") # interesting to see the effect is the same at all ages
+
 ##### Does extrinsic mortality risk mediate the relationship between SES and looking after health? ####
 
 lm_SES_hb <-glm(look_after_health_sqrt ~ SES_subj + age + gender + ethnicity, data=d)
@@ -714,6 +805,11 @@ lm_1st_child6 <- glm(age_first_child ~ n_prem*gender + age + scale(log(personal_
 summary(lm_1st_child6)
 plot_model(lm_1st_child6, type="pred",terms=c("n_prem","gender")) 
 
+lm_1st_child7 <- lmrob(age_first_child ~ youngest_death + gender + age + personal_income + SES_subj + stress + extrinsic_risk,data=d)
+summary(lm_1st_child7)
+plot_model(lm_1st_child7, type="pred",terms="youngest_death") 
+plot(d$age_first_child,d$youngest_death)
+
 ########### Ideal age at first child ########
 
 lm_ideal_child1 <- glm(ideal_age ~ scale(log(YPLL_sum+1)) + age + gender, data=d3)
@@ -736,6 +832,11 @@ plot_model(lm_ideal_child4, type="pred",terms="n_deaths")
 lm_ideal_child5 <- glm(ideal_age ~n_prem + age + gender + scale(log(personal_income+1)) + scale(SES_subj) + scale(stress), data=d3)
 summary(lm_ideal_child5) # nothing
 plot_model(lm_ideal_child5, type="pred",terms="n_prem") 
+
+lm_ideal_child6 <- lmrob(ideal_age ~ youngest_death + gender + age + personal_income + SES_subj + stress + extrinsic_risk,data=d)
+summary(lm_ideal_child6)
+plot_model(lm_ideal_child6, type="pred",terms="youngest_death") 
+plot(d$ideal_age,d$youngest_death)
 
 #### Green behaviour ####
 
@@ -781,7 +882,7 @@ plot_model(lm_env_tpt5, type="pred",terms="n_prem")
 plot_model(lm_env_tpt5, type="est",show.values=T)
 
 ### Smoker status ####
-#d$smoker <- as.factor(d$smoker)
+d$smoker <- as.factor(d$smoker)
 lm_smoker <- glm(smoker ~scale(log(YPLL_sum+1)) + age + gender, data=d3, family = binomial)
 summary(lm_smoker) # Hallelujah dos
 fig7 = ggplot(d3, aes(x=YPLL_sum, y=smoker)) +
@@ -818,6 +919,13 @@ summary(lm_smoker7) # et en plus y a pas le stress, ça me gusta
 
 plot_model(lm_smoker7, type="est",show.values=T)
 plot_model(lm_smoker7, type = "pred", terms = "n_prem")
+
+lm_smoker8 <- glm(smoker ~ youngest_death + gender + age + personal_income + SES_subj + stress, data =d, family = binomial)
+summary(lm_smoker8)
+
+bptest(lm_smoker8) # p<0.01
+coeftest(lm_smoker8, vcov = vcovHC(lm_smoker8))
+plot_model(lm_smoker8, type = "pred", terms = "youngest_death [all]")
 
 ### Check-up #### et breastfeed length : à refaire en ordinal logistic regression --> compliqué
 # polr_checkup <- polr(checkup ~scale(log(YPLL_sum+1))+gender + age, data=d3)

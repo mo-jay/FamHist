@@ -1,7 +1,7 @@
 # Preparation of the data from the study 'Premature mortality and timing of your life: 
 # An exploratory correlational study' for analysis
 # Mona Joly and colleagues
-# 08/03/21
+# 22/03/21
 
 rm(list=ls())
 
@@ -617,6 +617,19 @@ d2 <- d2 %>% mutate(
     n_prem >= 4 ~ "4-6 prem deaths"),
 )
 table(d2$n_prem_cat)
+
+    ### Creation of youngest death experienced var
+d2 <- d2 %>% mutate(
+  youngest_death = min(parent1_age_2,parent2_age_2,gp1_age_2,gp2_age_2,gp3_age_2,gp4_age_2,na.rm=TRUE)
+)
+summary(d2$youngest_death)
+
+for (i in 1:nrow(d2)){
+  d2$youngest_death[i] <- pmin(d2$parent1_age_2[i],d2$parent2_age_2[i],d2$gp1_age_2[i],d2$gp2_age_2[i],d2$gp3_age_2[i],d2$gp4_age_2[i],na.rm=TRUE)
+}
+summary(d2$youngest_death)
+hist(d2$youngest_death)
+mean(d2$youngest_death,na.rm=TRUE)
 
     ####### PATIENCE SCORE
 
