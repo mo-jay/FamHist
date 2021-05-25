@@ -1,7 +1,7 @@
 # Preparation of the data from the study 'Premature mortality and timing of your life: 
 # An exploratory correlational study' for analysis
 # Mona Joly and colleagues
-# 22/03/21
+# 25/05/21
 
 rm(list=ls())
 
@@ -37,7 +37,6 @@ if(!require(car)){
 }                           # for qqPlots
 
 #render("1-example.Rmd")    # Supposedly for Rmarkdown
-
 
 # setwd("/Users/monou/Nextcloud/Family history questionnaire/Data analysis") # Mac France Mona
 # setwd("/Users/Monouille/Nextcloud/Shared/HSI/Family history questionnaire/Data analysis/FamHist") # Macbook Mona

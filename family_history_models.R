@@ -1,6 +1,6 @@
 # Data analysis script for 'Premature mortality and timing of your life: An exploratory correlational study'
 # Mona Joly and colleagues
-# 22/03/21
+# 25/05/21
 
 rm(list=ls())
 
@@ -26,7 +26,7 @@ if(!require(bda)){
   install.packages("bda")
   library(bda)
 }                           # another way to calculate sobel test
-# if(!require(lme4)) install.packages("lme4") # for mixed-effects models
+
 if(!require(sjlabelled)){
   install.packages("sjlabelled")
   library(sjlabelled)
@@ -82,7 +82,6 @@ if(!require(broom)){
   library(broom)
 }
 
-
 # library(e1071)      # to calculate skewness
 # library(dlookr)     # to transform data
 # library(ggpubr)     # for density plots
@@ -92,7 +91,10 @@ if(!require(broom)){
 ### Loading the data ####
 
 # setwd("/Users/monou/Nextcloud/Family history questionnaire/Data analysis") # Mac France Mona
+
 # setwd("/Users/Monouille/Nextcloud/Shared/HSI/Family history questionnaire/Data analysis/FamHist") # Macbook Mona
+
+# setwd("C:/Users/monaj/Nextcloud/Shared/HSI/Family history questionnaire/Data analysis/FamHist") # Macbook Mona
 
 d <- read.table("data_famhist.txt",dec=",",sep="\t",header=TRUE)        # Read final data
 
@@ -237,7 +239,7 @@ plot_model(lm_health2, type="pred",terms="YPLL_sum")
 # The older ppl are, the more they look after their health: for one additional year, they take 0.01sd more care of their health
 # More affluent people take better care of their health (0.1 sd more)
 
-lm_health3 <- glm(look_after_health ~ scale(YPLL_sum) + age + gender + ethnicity + scale(personal_income) + scale(SES_subj) + scale(stress), data=d3)
+lm_health3 <- glm(look_after_health ~ scale(YPLL_sum) + age + gender + scale(personal_income) + scale(SES_subj) + scale(stress), data=d3)
 summary(lm_health3)
 # Coefficients:
 #                              Estimate Std. Error t value Pr(>|t|)    
@@ -265,7 +267,7 @@ lm_health3c <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gende
 summary(lm_health3c) # nothing is significant, YPLL sum very comparable
 
 plot_model(lm_health3, type="est",show.values = TRUE)
-plot_model(lm_health3, type="pred",terms=c("YPLL_sum","SES_subj"))
+plot_model(lm_health3, type="pred",terms="YPLL_sum")
 
 fig1 = ggplot(d3, aes(x=YPLL_sum, y=look_after_health)) + 
   theme_bw() + 
@@ -484,7 +486,7 @@ plot_model(lm_discounting7, type="pred",terms=c("YPLL_sum","gender"))
 ###### Secondary analyses #######
 #################################
 
-######### Alternative ways to measure the effect of (premature) death exposure within the family
+######### Alternative ways to measure the effect of (premature) death exposure within the family on FOBs
 #### The number of deaths within the family ####
   #### Its effect on looking after health ####
 lm_health_n <- glm(look_after_health_sqrt ~ n_deaths + gender + age + ethnicity,data=d)
@@ -603,16 +605,25 @@ plot_model(lm_discounting_np5, type="pred",terms="n_prem")
 
 #### The youngest death experienced ####
   #### Its effect on looking after health ####
-lm_health_youngest <- lmrob(look_after_health ~ youngest_death + gender + age + ethnicity + SES_subj + personal_income + stress + extrinsic_risk,data=d)
+lm_health_youngest <- lmrob(look_after_health ~ youngest_death + gender + age + SES_subj + personal_income + stress + extrinsic_risk,data=d)
 summary(lm_health_youngest)
 
 plot_model(lm_health_youngest, type="est", show.values = TRUE)
 plot_model(lm_health_youngest, type="pred",terms="youngest_death") # interesting to see the effect is the same at all ages
 
+fig1 = ggplot(d, aes(x=youngest_death, y=look_after_health)) + 
+  theme_bw() + 
+  geom_point() + 
+  geom_smooth(method="lm") +
+  #facet_wrap(~gender) +
+  xlab("Youngest death experienced") + 
+  ylab("Looking after health")
+fig1
+
 mediation.test(d$extrinsic_risk,d$youngest_death,d$look_after_health) #nope
 
   #### Its effect on time discounting ####
-lm_discounting_youngest <- lmrob(time_discounting ~ youngest_death + gender + age + ethnicity + SES_subj + personal_income + stress + extrinsic_risk,data=d)
+lm_discounting_youngest <- lmrob(time_discounting ~ youngest_death + gender + age + SES_subj + personal_income + stress + extrinsic_risk,data=d)
 summary(lm_discounting_youngest)
 
 plot_model(lm_discounting_youngest, type="est", show.values = TRUE)
@@ -628,7 +639,9 @@ summary(lm_discounting_youngest_IA)
 plot_model(lm_discounting_youngest_IA, type="est", show.values = TRUE)
 plot_model(lm_discounting_youngest_IA, type="pred",terms="youngest_death") # interesting to see the effect is the same at all ages
 
-##### Does extrinsic mortality risk mediate the relationship between SES and looking after health? ####
+
+######### POTENTIAL MEDIATORS ############
+  ##### Does PEMR mediate the relationship between SES and looking after health? ####
 
 lm_SES_hb <-glm(look_after_health_sqrt ~ SES_subj + age + gender + ethnicity, data=d)
 summary(lm_SES_hb)
@@ -709,7 +722,7 @@ mediation.test(d$extrinsic_risk,d$SES_subj,d$look_after_health)
 
 # PEMR is a mediator between subjective SES and looking after health (p<.001, z=3,66). Yay!
 
-#### Does PEMR mediate the relationship between YPLL_sum and time discounting? ####
+  #### Does PEMR mediate the relationship between YPLL_sum and time discounting? ####
 
 lm_discounting9 <- glm(patience_score ~ scale(log(extrinsic_risk+1)) + scale(SES_subj),data=d)
 summary(lm_discounting9)
@@ -736,7 +749,9 @@ lm_discounting10 <- glm(patience_score ~ scale(log(extrinsic_risk+1)) + scale(SE
 summary(lm_discounting10)
 #nothing
 
-########### Age at first child ##########
+
+##### Effects of familial death exposure on exploratory DV
+  ######## Age at first child ##########
 
 lm_1st_child1 <- glm(age_first_child ~ scale(log(YPLL_sum+1)) + gender + age,data=d3)
 summary(lm_1st_child1)
@@ -810,7 +825,7 @@ summary(lm_1st_child7)
 plot_model(lm_1st_child7, type="pred",terms="youngest_death") 
 plot(d$age_first_child,d$youngest_death)
 
-########### Ideal age at first child ########
+  ######## Ideal age at first child ########
 
 lm_ideal_child1 <- glm(ideal_age ~ scale(log(YPLL_sum+1)) + age + gender, data=d3)
 summary(lm_ideal_child1)
@@ -838,7 +853,7 @@ summary(lm_ideal_child6)
 plot_model(lm_ideal_child6, type="pred",terms="youngest_death") 
 plot(d$ideal_age,d$youngest_death)
 
-#### Green behaviour ####
+  ######## Green behaviour ####
 
 lm_env <- glm(environment_1 ~ scale(log(YPLL_sum+1)) + age + gender, data=d3)
 summary(lm_env) # nothing
@@ -881,7 +896,7 @@ summary(lm_env_tpt5) # strong effect
 plot_model(lm_env_tpt5, type="pred",terms="n_prem")
 plot_model(lm_env_tpt5, type="est",show.values=T)
 
-### Smoker status ####
+  ######## Smoker status ####
 d$smoker <- as.factor(d$smoker)
 lm_smoker <- glm(smoker ~scale(log(YPLL_sum+1)) + age + gender, data=d3, family = binomial)
 summary(lm_smoker) # Hallelujah dos
@@ -934,37 +949,67 @@ plot_model(lm_smoker8, type = "pred", terms = "youngest_death [all]")
 # polr_checkup <- polr(checkup ~n_prem+gender + age, data=d)
 # summary(polr_checkup) # nein
 # 
-# #### Breastfeed length ####
+  ######## Breastfeed length ####
 # d3 <- d %>% filter(!is.na(breastfeed_length))
 # summary(d3$breastfeed_length)
 # lm_breastfeed <- glm(breastfeed_length ~ scale(YPLL_sqrt) + age + ethnicity, data=d3)
 # summary(lm_breastfeed) # no effect
 
-####### Effect of controllability and closeness of the age of death ####
-### on effort in looking after health
-lm_health_control <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress) + scale(controllability), data=d3)
+
+####### Effects of controllability and closeness to the deceased relative on main outcome variables ####
+  ##### On effort in looking after health ####
+lm_health_control <- glm(look_after_health ~ scale(log(YPLL_sum+1)) + age + gender + scale(log(personal_income)) + scale(SES_subj) + scale(stress) + scale(controllability), data=d3)
 summary(lm_health_control)
 # a higher controllability means "they could have done more to look after their health"
 # The more people feel their dead relatives were responsible for their death, the more they look after their health
 # The more people feel their relatives' death was uncontrollable, the less they look after their health
 
-lm_health_control2 <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1))*controllability + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress), data=d3)
+lm_health_control2 <- glm(look_after_health ~ scale(log(YPLL_sum+1))*controllability + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress), data=d3)
 summary(lm_health_control2)
 
 plot_model(lm_health_control, type="est",show.values=TRUE)
-plot_model(lm_health_control, type="pred",terms="controllability") 
-plot(d3$controllability,d3$look_after_health)
+plot_model(lm_health_control_close, type="pred",terms="controllability") 
+plot_model(lm_health_control, type="pred",terms="YPLL_sum") 
+  plot(d3$controllability,d3$look_after_health)
 hist(d3$controllability)
 d3$n_deaths
 
-lm_health_control_close <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress) + scale(controllability) + scale(closeness), data=d3)
+lm_health_control_close <- glm(look_after_health ~ scale(log(YPLL_sum+1)) + age + gender + scale(log(personal_income)) + scale(SES_subj) + scale(stress) + scale(controllability) + scale(closeness), data=d3)
 summary(lm_health_control_close) # no impact of closeness to the relative
+plot_model(lm_health_control_close, type="est",show.values=TRUE)
 
-### on temporal discounting
+  ##### On temporal discounting ####
 lm_patience_control <- glm(patience_score ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress) + scale(controllability), data=d3)
 summary(lm_patience_control) # no impact on future discounting mrmrm
 
-lm_patience_control_close <- glm(patience_score ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress) + scale(controllability) + scale(closeness), data=d3)
+lm_patience_control_close <- glm(patience_score ~ scale(log(YPLL_sum+1)) + age + gender + scale(log(personal_income)) + scale(SES_subj) + scale(stress) + scale(controllability) + scale(closeness), data=d3)
 summary(lm_patience_control_close) # significant impact of closeness!
 # The more the participants felt close to their relatives who died, the less patient they are --> the more they discount the future
 
+plot_model(lm_patience_control_close, type="est",show.values=TRUE)
+plot_model(lm_patience_control_close, type="pred",terms="closeness") 
+plot_model(lm_patience_control_close, type="pred",terms="YPLL_sum") 
+
+
+###### Effects of the raw ages at death of the deceased relatives on the main outcome variables #####
+
+lm_he_ages <- glm(look_after_health ~ parent1_age_2 + parent2_age_2 + gp1_age_2 + gp2_age_2 + gp3_age_2 + gp4_age_2, data =d)
+summary(lm_he_ages)
+plot_model(lm_he_ages, type="pred",terms="gp3_age_2") 
+
+lm_td_ages <- glm(time_discounting ~ parent1_age_2 + parent2_age_2 + gp1_age_2 + gp2_age_2 + gp3_age_2 + gp4_age_2, data =d3)
+summary(lm_td_ages)
+plot_model(lm_td_ages, type="pred",terms="parent1_age_2") 
+
+fig8 = ggplot(d3, aes(x=parent1_age_2, y=time_discounting)) +
+  theme_bw() +
+  geom_point() +
+  geom_smooth(method="lm") +
+  #facet_wrap(~gender) +
+  xlab("age at death of parent 1") +
+  ylab("Time discounting")
+fig8
+
+cor.test(d$SES_subj,d$YPLL_sum)
+cor.test(d$extrinsic_risk,d$YPLL_sum)
+cor.test(d$extrinsic_risk,d$youngest_death)
