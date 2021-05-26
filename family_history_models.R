@@ -176,7 +176,7 @@ summary(lm8)
 
 ### Models ####
 
-lm_health1 <- glm(look_after_health ~ scale(YPLL_sum) + age + gender + ethnicity,data=d3)
+lm_health1 <- glm(look_after_health ~ n_deaths + age + gender + ethnicity,data=d3)
 summary(lm_health1)
 
 # Coefficients:
@@ -527,7 +527,7 @@ AIC(lm_health_a) #2229
 plot_model(lm_health_n2, type="est")
 plot_model(lm_health_n2, type="pred",terms="n_deaths") 
 
-lm_health_n3 <- glm(look_after_health_sqrt ~ n_deaths + age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj) + scale(stress),data=d)
+lm_health_n3 <- glm(look_after_health ~ n_deaths + age + gender + ethnicity + personal_income + SES_subj + stress,data=d)
 summary(lm_health_n3)
 plot_model(lm_health_n3, type="est", show.values=TRUE)
 plot_model(lm_health_n3, type="pred",terms="n_deaths") 
@@ -990,6 +990,28 @@ plot_model(lm_patience_control_close, type="est",show.values=TRUE)
 plot_model(lm_patience_control_close, type="pred",terms="closeness") 
 plot_model(lm_patience_control_close, type="pred",terms="YPLL_sum") 
 
+
+#### DN ####
+
+m1 = lm(extrinsic_risk ~ age + gender + youngest_death,  data=d)
+summary(m1)
+plot_model(m1, type="pred",terms="parents_dead")
+plot_model(m1, type="pred",terms="n_deaths")
+
+cor.test(d$age,d$n_deaths)
+cor.test(d$age,d$extrinsic_risk)
+cor.test(d$age,d$look_after_health)
+cor.test(d$n_deaths,d$look_after_health)
+
+d$nbd_ctrl <- d$gp_dead*d$controllability_gp
+d$closeness_gp <- as.numeric(d$closeness_gp)
+
+m2 <- lm(extrinsic_risk ~ age + gender + nbd_ctrl, data=d)
+summary(m2)
+summary(d$nbd_ctrl)
+
+m3 <- lm(YPLL_sum ~age + gender + parents_dead + gp_dead, data=d)
+summary(m3)
 
 ###### Effects of the raw ages at death of the deceased relatives on the main outcome variables #####
 

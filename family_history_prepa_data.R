@@ -715,12 +715,32 @@ for (i in 1:nrow(d2)){
 summary(d2$controllability)
 hist(d2$controllability)
 
+for (i in 1:nrow(d2)){
+  d2$controllability_parents[i] <- mean(c(d2$parent1_control_1[i],d2$parent2_control_1[i]), na.rm=TRUE)
+}
+summary(d2$controllability_parents)
+
+for (i in 1:nrow(d2)){
+  d2$controllability_gp[i] <- mean(c(d2$gp1_control_1[i],d2$gp2_control_1[i],d2$gp3_control_1[i],d2$gp4_control_1[i]), na.rm=TRUE)
+}
+summary(d2$controllability_gp)
+
     #### CLOSENESS
 for (i in 1:nrow(d2)){
   d2$closeness[i] <- mean(c(d2$parent1_close_1[i],d2$parent2_close_1[i],d2$gp1_close_1[i],d2$gp2_close_1[i],d2$gp3_close_1[i],d2$gp4_close_1[i]), na.rm=TRUE)
 }
 summary(d2$closeness)
 hist(d2$closeness)
+
+for (i in 1:nrow(d2)){
+  d2$closeness_parents[i] <- mean(c(d2$parent1_close_1[i],d2$parent2_close_1[i]), na.rm=TRUE)
+}
+summary(d2$closeness_parents)
+
+for (i in 1:nrow(d2)){
+  d2$closeness_gp[i] <- mean(c(d2$gp1_close_1[i],d2$gp2_close_1[i],d2$gp3_close_1[i],d2$gp4_close_1[i]), na.rm=TRUE)
+}
+summary(d2$closeness_gp)
 
   #### Data transformations ####
 
