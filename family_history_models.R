@@ -1,6 +1,6 @@
 # Data analysis script for 'Premature mortality and timing of your life: An exploratory correlational study'
 # Mona Joly and colleagues
-# 25/05/21
+# 27/08/21
 
 rm(list=ls())
 
@@ -109,8 +109,9 @@ sapply(d[cols.factor],class)
 d3b <- d %>% filter(YPLL_sum < mean(YPLL_sum, na.rm = TRUE) + 3*sd(YPLL_sum,na.rm=TRUE)) 
 d3 <- d[-c(which(d$parent1_age_2 == 19 | d$parent2_age_2 == 19 | d$gp1_age_2 == 19 | d$gp2_age_2 == 19 | d$gp3_age_2 == 19 | d$gp4_age_2 == 19)),]
 d4 <- d3%>% filter(attention_4 ==4) 
-d5 <- d3%>% filter(age >= 30)
+d5 <- d3%>% filter(age >= 30 & age <= 40)
 d6 <- d3 %>% filter (age >=40 & age <= 60)
+d7 <- d %>% filter (age >=70)
 
 cor.test(d3$age,d3$YPLL_sum)
 plot(d3$age,d3$YPLL_sum)
@@ -126,6 +127,11 @@ fig1 = ggplot(d5, aes(x=age, y=YPLL_sum)) +
   xlab("age") + 
   ylab("YPLL sum")
 fig1
+
+plot(d$age,d$Duration)
+cor.test(d$age,d$Duration)
+mean(d7$Duration)
+mean(d$Duration)
 
 ################################
 ######## MAIN ANALYSIS #########
@@ -196,7 +202,7 @@ summary(lm_health1)
 bptest(lm_health1) # Well apparently we cannot reject the null that the variance of
 # the residuals is constant. So that's good.
 
-coeftest(lm_health1, vcov = vcovHC(lm_health1))
+coeftest(lm_health1, vcov = vcovHC(lm_health1)) # corrected coefficients
 
 lm_health1b <- glm(look_after_health_sqrt ~ scale(log(YPLL_sum+1)) + age + gender + ethnicity,data=d5)
 summary(lm_health1b) # exactly the same
@@ -554,6 +560,8 @@ count(d %>% filter(gender=="Female" & n_deaths=="5-6 deaths")) # 137 participant
 plot_model(lm_discounting_n3, type="est",show.values=T)
 plot_model(lm_discounting_n3, type="pred",terms=c("n_deaths","gender")) # super fun: men with lots of deaths discount the future less, women discount it more
 
+
+
 #### The number of premature deaths within the family ####
   #### Its effect on looking after health ####
 
@@ -672,7 +680,7 @@ summary(lm_SES_extrinsic)
 # ethnicityOther  0.584956   0.312919   1.869 0.062101 .  
 # ethnicityWhite  0.326012   0.160349   2.033 0.042515 * 
 
-lm_extrinsic_hb <- glm(look_after_health_sqrt~scale(extrinsic_risk_sqrt) + age + gender + ethnicity,data=d)
+lm_extrinsic_hb <- glm(look_after_health~extrinsic_risk + age + gender + ethnicity,data=d)
 summary(lm_extrinsic_hb)
 # Coefficients:
 #                              Estimate Std. Error t value Pr(>|t|)    
@@ -724,7 +732,7 @@ mediation.test(d$extrinsic_risk,d$SES_subj,d$look_after_health)
 
   #### Does PEMR mediate the relationship between YPLL_sum and time discounting? ####
 
-lm_discounting9 <- glm(patience_score ~ scale(log(extrinsic_risk+1)) + scale(SES_subj),data=d)
+lm_discounting9 <- glm(patience_score ~ extrinsic_risk + SES_subj,data=d)
 summary(lm_discounting9)
 # Coefficients:
 #                                 Estimate Std. Error t value Pr(>|t|)    
@@ -811,12 +819,12 @@ summary(lm_1st_child4)
 
 plot_model(lm_1st_child4, type="pred",terms=c("YPLL_sum","gender"))
 
-lm_1st_child5 <- glm(age_first_child ~ n_deaths*gender + age + scale(log(personal_income+1)) + scale(SES_subj) + scale(stress),data=d)
+lm_1st_child5 <- glm(age_first_child ~ n_deaths + gender + age + scale(log(personal_income+1)) + scale(SES_subj) + scale(stress),data=d)
 summary(lm_1st_child5)
 
 plot_model(lm_1st_child5, type="pred",terms=c("n_deaths","gender")) 
 
-lm_1st_child6 <- glm(age_first_child ~ n_prem*gender + age + scale(log(personal_income+1)) + scale(SES_subj) + scale(stress),data=d3)
+lm_1st_child6 <- glm(age_first_child ~ n_prem + gender + age + scale(log(personal_income+1)) + scale(SES_subj) + scale(stress),data=d3)
 summary(lm_1st_child6)
 plot_model(lm_1st_child6, type="pred",terms=c("n_prem","gender")) 
 
@@ -993,15 +1001,21 @@ plot_model(lm_patience_control_close, type="pred",terms="YPLL_sum")
 
 #### DN ####
 
+lm_health_n <- glm(look_after_health ~ n_deaths + gender + age + ethnicity + SES_subj + personal_income + extrinsic_risk,data=d5)
+summary(lm_health_n)
+
+
+
 m1 = lm(extrinsic_risk ~ age + gender + youngest_death,  data=d)
 summary(m1)
 plot_model(m1, type="pred",terms="parents_dead")
 plot_model(m1, type="pred",terms="n_deaths")
 
-cor.test(d$age,d$n_deaths)
+cor.test(d5$age,d5$n_deaths)
 cor.test(d$age,d$extrinsic_risk)
 cor.test(d$age,d$look_after_health)
-cor.test(d$n_deaths,d$look_after_health)
+cor.test(d5$n_deaths,d5$look_after_health)
+plot(d5$age,d5$n_deaths)
 
 d$nbd_ctrl <- d$gp_dead*d$controllability_gp
 d$closeness_gp <- as.numeric(d$closeness_gp)

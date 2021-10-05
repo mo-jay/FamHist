@@ -1,7 +1,7 @@
 # Preparation of the data from the study 'Premature mortality and timing of your life: 
 # An exploratory correlational study' for analysis
 # Mona Joly and colleagues
-# 25/05/21
+# 27/08/21
 
 rm(list=ls())
 
@@ -921,4 +921,3 @@ hist(d2$env_transport) # quite uniform. Maybe bimodal
 ###################################################
 
 write.table(d2,"data_famhist.txt",dec=".",sep="\t", row.names = F)
-
