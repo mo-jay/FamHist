@@ -416,7 +416,23 @@ summary(lm_health_n)
 # ethnicityMixed         -0.384575   0.521071  -0.738  0.46080    
 # ethnicityOther         -0.270621   0.566920  -0.477  0.63330    
 # ethnicityWhite         -0.744234   0.279848  -2.659  0.00805 **
-AIC(lm_health_n) #2232, not as good
+
+# AIC: 2232
+
+# Coefficients:
+#                 Estimate Std. Error t value Pr(>|t|)    
+# (Intercept)    72.63482    3.63990  19.955  < 2e-16 ***
+# n_deaths       -1.83136    0.77120  -2.375  0.01791 *  
+# genderMale     -3.90726    1.59468  -2.450  0.01459 *  
+# age             0.35444    0.07595   4.667 3.86e-06 ***
+# ethnicityBlack  0.04672    4.79737   0.010  0.99223    
+# ethnicityMixed -3.53948    5.63186  -0.628  0.52996    
+# ethnicityOther -1.85547    6.33671  -0.293  0.76978    
+# ethnicityWhite -8.09742    3.07363  -2.634  0.00867 ** 
+
+# AIC: 4780.6
+# Maybe you need a lot of deaths to show an effect. The effect for n(4-6) is ridiculous though.
+
 
 plot_model(lm_health_n, type="est")
 plot_model(lm_health_n, type="pred",terms="n_deaths")
@@ -976,20 +992,80 @@ cor.test(d3$extrinsic_risk,d3$n_deaths)
 #### Choice of the age range for new study ####
 
 plot(d$age,d$n_deaths)
-var(d$n_deaths, na.rm = TRUE)
-var(d6$n_deaths, na.rm = TRUE)
-var(d$gp_dead, na.rm = TRUE)
-var(d$parents_dead, na.rm = T)
-var(d5$look_after_health, na.rm = TRUE)
-var(d6$look_after_health, na.rm = TRUE)
-var(d5$smoker, na.rm = TRUE)
-var(d6$smoker, na.rm = TRUE)
-var(d5$time_discounting, na.rm = TRUE)
-var(d6$time_discounting, na.rm = TRUE)
+plot(d$age,d$parents_dead) 
+# only one participant has lost both parents before the age of 45. 
+# Almost none has lost any before 25
+plot(d$age,d$gp_dead)
+# Very few have all gp at all ages. Very few have lost only one passed 30.
+# After 35 the large majority will have lost 3+.
+# 30 seems to be quite a cut-off age
+
+plot(d$age,d$look_after_health)
+
+d3 <- d %>% filter (age >=30 & age <= 35) # n=73
+d4 <- d %>% filter (age >=35 & age <= 40) # n=66 --> would expect a higher variance of VoI
+d5 <- d %>% filter (age >=24 & age <= 30) # n=65
+d6 <- d %>% filter (age >=28 & age <= 33) # n=67
+
+var(d$n_deaths, na.rm = TRUE)   # 2.439315
+var(d3$n_deaths, na.rm = TRUE)  # 1.204969
+var(d4$n_deaths, na.rm = TRUE)  # 1.126388 <d3
+var(d5$n_deaths, na.rm = TRUE)  # 1.52 >d3/d4
+var(d6$n_deaths, na.rm = TRUE)  # 1.43 
+# Best is d5, then d6, then d3
+
+var(d3$gp_dead, na.rm = TRUE)   # 0.9449275
+var(d4$gp_dead, na.rm = TRUE)   # 0.8269329 <d3
+var(d5$gp_dead, na.rm = TRUE)   # 1.32 >d3/d4
+var(d6$gp_dead, na.rm = TRUE)   # 1.08
+# Best is d5, then d6, then d3
+
+var(d3$parents_dead, na.rm = T)  # 0.182903
+var(d4$parents_dead, na.rm = T)  # 0.152 <d3
+var(d5$parents_dead, na.rm = T)  # 0.152 =d4
+var(d6$parents_dead, na.rm = T)  # 0.23
+# Best is d6, then d3
+
+var(d3$look_after_health, na.rm = TRUE) # 371.5955
+var(d4$look_after_health, na.rm = TRUE) # 306.26 <d3
+var(d5$look_after_health, na.rm = TRUE) # 390.8 >d3,d4
+var(d6$look_after_health, na.rm = TRUE) # 392.5
+# Best is d5/d6, then d3
+
+var(d3$smoker, na.rm = TRUE)            # 0.099
+var(d4$smoker, na.rm = TRUE)            # 0.131 > d3
+var(d5$smoker, na.rm = TRUE)            # 0.06 <d3,d4
+var(d6$smoker, na.rm = TRUE)            # 0.08 <d3,d4
+# Best is d4, then d3
+
+var(d3$time_discounting, na.rm = TRUE)  # 105.1
+var(d4$time_discounting, na.rm = TRUE)  # 106.6 =>d3
+var(d5$time_discounting, na.rm = TRUE)  # 112.1 > d3,d4
+var(d6$time_discounting, na.rm = TRUE)  # 108
+# Best is d5, then d6, all comparable
+
+var(d3$extrinsic_risk, na.rm = TRUE)  # 397.3
+var(d4$extrinsic_risk, na.rm = TRUE)  # 274 <d3
+var(d5$extrinsic_risk, na.rm = TRUE)  # 333.6 <d3, >d4
+var(d6$extrinsic_risk, na.rm = TRUE)  # 408.3
+# Best is d6, then d3
+
+lm_health_d3 <- glm(look_after_health ~ n_deaths + age + gender + ethnicity + personal_income + SES_subj + stress,data=d3)
+summary(lm_health_d3)
+
+lm_health_d4 <- glm(look_after_health ~ n_deaths + age + gender + ethnicity + personal_income + SES_subj + stress,data=d4)
+summary(lm_health_d4)
+
+lm_health_d5 <- glm(look_after_health ~ n_deaths + age + gender + ethnicity + personal_income + SES_subj + stress,data=d5)
+summary(lm_health_d5)
 
 lm_new <- glm(look_after_health ~ smoker + checkup, data =d)
 summary(lm_new)
 cor.test(d$look_after_health,d$smoker)
+
+count(d2 %>% filter(n_deaths <= 3))/(582-17) # 29% had 3 deaths or less in their family
+count(d2 %>% filter(n_deaths == 4))/(582-17) #26% had 4 deaths in their family
+count(d2 %>% filter(n_deaths >= 5))/(582-17) # 45% had 5 to 6 deaths in their family
 
 ###### History ###
 ### Choosing the right transformations of the variables based on hist of residuals ####
