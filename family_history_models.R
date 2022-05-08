@@ -1,6 +1,6 @@
 # Data analysis script for 'Premature mortality and timing of your life: An exploratory correlational study'
 # Mona Joly and colleagues
-# 07/05/22
+# 08/05/22
 
 rm(list=ls())
 
@@ -14,6 +14,10 @@ if(!require(tidylog)){
   install.packages("tidylog")
   library(tidylog)
 }
+# if(!require(dplyr)){
+#   install.packages("dplyr")
+#   library(dplyr)
+# }
 if(!require(rmarkdown)){
   install.packages("rmarkdown")
   library(rmarkdown)
@@ -87,15 +91,14 @@ if(!require(mediation)){
   library(mediation)
 }
 
-if(!require(bayestestR)){
-  install.packages("bayestestR")
-  library(bayestestR)
-}
-                                  # for Bayesian stats
-if(!require(rstanarm)){
-  install.packages("rstanarm")
-  library(rstanarm)
-}
+# if(!require(bayestestR)){
+#   install.packages("bayestestR")
+#   library(bayestestR)
+# }                     # for Bayesian stats (doesn't work)
+# if(!require(rstanarm)){
+#   install.packages("rstanarm")
+#   library(rstanarm)
+# }
 
 # library(e1071)      # to calculate skewness
 # library(dlookr)     # to transform data
@@ -131,6 +134,33 @@ sapply(d[cols.factor],class)
 # fig1 # super skewed bc of a few YPLL btw 200 and 300+
 
 d2 <- d[-c(which(d$parent1_age_2 == 19 | d$parent2_age_2 == 19 | d$gp1_age_2 == 19 | d$gp2_age_2 == 19 | d$gp3_age_2 == 19 | d$gp4_age_2 == 19)),]
+
+d3 = apply_labels(d,
+                  gender = "Gender",
+                  age = "Age",
+                  look_after_health = "Effort in looking after health",
+                  checkup = "Time since last medical check-up",
+                  smoker = "Smoker status",
+                  environment_1 = "Green behaviour",
+                  env_transport = "Green behaviour for transport usage",
+                  extrinsic_risk = "Perceived uncontrollable mortality risk",
+                  age_first_child = "Age at first child",
+                  breastfeed_length = "Breastfeeding duration",
+                  ideal_age = "Ideal age at first child",
+                  parents_dead = "Number of deceased parents",
+                  gp_dead = "Number of deceased grandparents",
+                  n_deaths = "Number of deaths in the family",
+                  stress = "Stress",
+                  ethnicity = "Ethnicity",
+                  personal_income = "Personal income",
+                  SES_subj = "Subjective SES",
+                  YPLL_sum = "Sum of years of potential life lost",
+                  n_prem = "Number of premature deaths",
+                  youngest_death = "Youngest death in the family",
+                  patience_score = "Patience score",
+                  time_discounting = "Financial time discounting",
+                  controllability = "Feeling of control over familial deaths",
+                  closeness = "Closeness to the deceased relatives")
 
 # fig2 = ggplot(d2, aes(x=YPLL_sum, y=look_after_health)) + 
 #   theme_bw() + 
@@ -467,18 +497,31 @@ AIC(lm_health_a) #2229
 plot_model(lm_health_n2, type="est")
 plot_model(lm_health_n2, type="pred",terms="n_deaths") 
 
-lm_health_n3 <- glm(look_after_health ~ n_deaths + age + gender + ethnicity + personal_income + SES_subj + stress,data=d)
+lm_health_n3 <- glm(look_after_health ~ n_deaths + age + gender + ethnicity  + SES_subj + stress,data=d3)
 summary(lm_health_n3)
-plot_model(lm_health_n3, type="est", show.values=TRUE, title="Effort in looking after health", rm.terms=c("ethnicity [White]","ethnicity [Black]", "ethnicity [Other]", "ethnicity [Mixed]","ethnicity [Asian]"))
+plot_model(lm_health_n3, type="est", show.values=TRUE, rm.terms=c("ethnicity [White]","ethnicity [Black]", "ethnicity [Other]", "ethnicity [Mixed]","ethnicity [Asian]"))
 plot_model(lm_health_n3, type="std2", show.values=TRUE, rm.terms=c("ethnicity [White]","ethnicity [Black]", "ethnicity [Other]", "ethnicity [Mixed]","ethnicity [Asian]"))
-plot_model(lm_health_n3, type="slope", show.values=TRUE, rm.terms="ethnicity")
-# we can see the effect is noised by the n_deaths=6, which is only older ppl who look greatly after their health anyway
-d7<- d %>% filter (age <= 50) # 
-lm_health_d7 <- glm(look_after_health ~ n_deaths + age + gender + ethnicity + personal_income + SES_subj + stress,data=d7)
-summary(lm_health_d7) # doesn't strengthen the effect so much, but on the next graph we can see smth in the right direction all along
-plot_model(lm_health_d7, type="slope", show.values=TRUE)
-table(d7$SES_subj)
 
+lm_health_n3bis <- glm(look_after_health ~ n_deaths + age + gender + ethnicity + log(personal_income) + SES_subj + stress,data=d)
+summary(lm_health_n3bis)
+plot_model(lm_health_n3bis, type="slope", show.values=TRUE, rm.terms="ethnicity") # doesn't work with labels
+# we can see the effect is noised by the n_deaths=6, which is only older ppl who look greatly after their health anyway
+d7<- d %>% filter (age < 50) # 
+lm_health_d7 <- glm(look_after_health ~ n_deaths + age + gender + ethnicity + log(personal_income) + SES_subj + stress,data=d7)
+summary(lm_health_d7) # doesn't strengthen the effect so much, but on the next graph we can see smth in the right direction all along
+plot_model(lm_health_d7, type="slope", show.values=TRUE, rm.terms="ethnicity")
+table(d7$SES_subj) # weird values for the last 2 points as it's only 3 ppl, 1pt only 1
+table(d$n_deaths) # out of the 126 participants who lost all 6 family members, only 6 are less than 50
+table(d7$stress)
+
+lm_health_d7bis <- glm(look_after_health ~ n_deaths + age + gender + ethnicity + SES_subj + stress,data=d7)
+summary(lm_health_d7bis) # doesn't strengthen the effect so much, but on the next graph we can see smth in the right direction all along
+plot_model(lm_health_d7bis, type="est", show.values=TRUE, rm.terms=c("ethnicity [White]","ethnicity [Black]", "ethnicity [Other]", "ethnicity [Mixed]","ethnicity [Asian]"))
+plot_model(lm_health_d7bis, type="std2", show.values=TRUE, rm.terms=c("ethnicity [White]","ethnicity [Black]", "ethnicity [Other]", "ethnicity [Mixed]","ethnicity [Asian]"))
+
+
+
+# m_bayes <- stan_glm(look_after_health ~ n_deaths + age + gender + ethnicity + personal_income + SES_subj + stress,data=d, chains=1)
 
 plot_model(lm_health_n3, type="pred",terms="n_deaths") 
 
