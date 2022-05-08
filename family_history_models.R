@@ -1,6 +1,6 @@
 # Data analysis script for 'Premature mortality and timing of your life: An exploratory correlational study'
 # Mona Joly and colleagues
-# 29/03/22
+# 07/05/22
 
 rm(list=ls())
 
@@ -87,6 +87,16 @@ if(!require(mediation)){
   library(mediation)
 }
 
+if(!require(bayestestR)){
+  install.packages("bayestestR")
+  library(bayestestR)
+}
+                                  # for Bayesian stats
+if(!require(rstanarm)){
+  install.packages("rstanarm")
+  library(rstanarm)
+}
+
 # library(e1071)      # to calculate skewness
 # library(dlookr)     # to transform data
 # library(ggpubr)     # for density plots
@@ -95,11 +105,11 @@ if(!require(mediation)){
 
 ### Loading the data ####
 
-# setwd("/Users/monou/Nextcloud/Family history questionnaire/Data analysis") # Mac France Mona
+setwd("/Users/monou/Nextcloud/Shared/HSI/Family history questionnaire/Data analysis/FamHist") # Mac France Mona
 
 # setwd("/Users/Monouille/Nextcloud/Shared/HSI/Family history questionnaire/Data analysis/FamHist") # Macbook Mona
 
-setwd("C:/Users/monaj/Nextcloud/Shared/HSI/Family history questionnaire/Data analysis/FamHist") # Macbook Mona
+# setwd("C:/Users/monaj/Nextcloud/Shared/HSI/Family history questionnaire/Data analysis/FamHist") # Macbook Mona
 
 d <- read.table("data_famhist.txt",dec=",",sep="\t",header=TRUE)        # Read final data
 
@@ -400,7 +410,7 @@ plot_model(lm_discounting6, type="pred",terms=c("YPLL_sum","gender"))
 ###### SECONDARY ANALYSES #######
 #################################
 
-######### Alternative ways to measure the effect of (premature) death exposure within the family on FOBs
+######### Alternative ways to measure the effect of familial death exposure on FOBs
 #### The number of deaths within the family ####
   #### Its effect on looking after health ####
 lm_health_n <- glm(look_after_health ~ n_deaths + gender + age + ethnicity,data=d2)
@@ -437,7 +447,7 @@ summary(lm_health_n)
 plot_model(lm_health_n, type="est")
 plot_model(lm_health_n, type="pred",terms="n_deaths")
 
-lm_health_n2 <- glm(look_after_health_sqrt ~ n_deaths*age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d)
+lm_health_n2 <- glm(look_after_health ~ n_deaths*age + gender + ethnicity + scale(log(personal_income)) + scale(SES_subj),data=d)
 summary(lm_health_n2)
 # Coefficients:
 #                              Estimate Std. Error t value Pr(>|t|)    
@@ -459,7 +469,17 @@ plot_model(lm_health_n2, type="pred",terms="n_deaths")
 
 lm_health_n3 <- glm(look_after_health ~ n_deaths + age + gender + ethnicity + personal_income + SES_subj + stress,data=d)
 summary(lm_health_n3)
-plot_model(lm_health_n3, type="est", show.values=TRUE)
+plot_model(lm_health_n3, type="est", show.values=TRUE, title="Effort in looking after health", rm.terms=c("ethnicity [White]","ethnicity [Black]", "ethnicity [Other]", "ethnicity [Mixed]","ethnicity [Asian]"))
+plot_model(lm_health_n3, type="std2", show.values=TRUE, rm.terms=c("ethnicity [White]","ethnicity [Black]", "ethnicity [Other]", "ethnicity [Mixed]","ethnicity [Asian]"))
+plot_model(lm_health_n3, type="slope", show.values=TRUE, rm.terms="ethnicity")
+# we can see the effect is noised by the n_deaths=6, which is only older ppl who look greatly after their health anyway
+d7<- d %>% filter (age <= 50) # 
+lm_health_d7 <- glm(look_after_health ~ n_deaths + age + gender + ethnicity + personal_income + SES_subj + stress,data=d7)
+summary(lm_health_d7) # doesn't strengthen the effect so much, but on the next graph we can see smth in the right direction all along
+plot_model(lm_health_d7, type="slope", show.values=TRUE)
+table(d7$SES_subj)
+
+
 plot_model(lm_health_n3, type="pred",terms="n_deaths") 
 
 lm_health_n4 <- glm(look_after_health ~ parents_dead + gp_dead + age + gender + ethnicity + SES_subj + stress, data =d)
@@ -468,11 +488,16 @@ summary(lm_health_n4)
 lm_ext_pd <- glm(extrinsic_risk ~ parents_dead + gp_dead + age + gender + ethnicity + SES_subj + stress, data=d)
 summary(lm_ext_pd)
 
-lm_ext_nd <- glm(extrinsic_risk ~ n_deaths, data=d)
+lm_ext_nd <- glm(extrinsic_risk ~ n_deaths + age + gender + SES_subj + controllability, data=d)
 summary(lm_ext_nd)
 
 
 cor.test(d$extrinsic_risk,d$gp_dead)
+
+lm_n_ctrl <- glm(look_after_health ~ controllability + age + gender + ethnicity+ SES_subj + personal_income + stress + extrinsic_risk, data=d)
+summary(lm_n_ctrl)
+
+
 
   #### Its effect on patience score ####
 lm_discounting_n <- glm(patience_score ~ n_deaths + age + gender + ethnicity,data=d)
@@ -518,7 +543,8 @@ summary(lm_health_np3) # stress tambien
 plot_model(lm_health_np3, type="est", show.values = TRUE)
 plot_model(lm_health_np3, type="pred",terms="n_prem")
 
-plot(d$n_deaths,d$age)
+plot(d$age,d$n_deaths)
+plot(d$age,d$look_after_health)
 
   #### Its effect on patience score ####
 
@@ -565,6 +591,7 @@ fig1 = ggplot(d, aes(x=youngest_death, y=look_after_health)) +
 fig1
 
 mediation.test(d$extrinsic_risk,d$youngest_death,d$look_after_health) #nope
+mediation.test(d$extrinsic_risk,d$n_deaths,d$look_after_health)
 
   #### Its effect on time discounting ####
 lm_discounting_youngest <- lmrob(time_discounting ~ youngest_death + gender + age + SES_subj + personal_income + stress + extrinsic_risk,data=d)
@@ -664,7 +691,17 @@ mediation.test(d$extrinsic_risk,d$SES_subj,d$look_after_health)
 # z.value 3.6561556399 3.6276544437 3.6853393390
 # p.value 0.0002560259 0.0002860077 0.0002283981
 
-# PEMR is a mediator between subjective SES and looking after health (p<.001, z=3,66). Yay!
+# PEMR is a mediator between subjective SES and looking after health (p<.001, z=3,66).
+# Doesn't fully mediate the association though
+
+mediation.test(d$gp_dead,d$SES_subj,d$look_after_health)
+
+lm_SES_n <- lm(gp_dead ~ SES_subj + personal_income + age + gender, data=d)
+summary(lm_SES_n)
+
+cor.test(d$SES_subj,d$controllability)
+
+
 
   #### Does PEMR mediate the relationship between YPLL_sum and time discounting? ####
 
@@ -755,7 +792,7 @@ summary(lm_1st_child4)
 
 plot_model(lm_1st_child4, type="pred",terms=c("YPLL_sum","gender"))
 
-lm_1st_child5 <- glm(age_first_child ~ n_deaths + gender + age + scale(log(personal_income+1)) + scale(SES_subj) + scale(stress),data=d)
+lm_1st_child5 <- glm(age_first_child ~ n_deaths + gender + age + ethnicity + SES_subj + stress,data=d)
 summary(lm_1st_child5)
 
 plot_model(lm_1st_child5, type="pred",terms=c("n_deaths","gender")) 
@@ -784,7 +821,7 @@ summary(lm_ideal_child3)
 # small positive effect of stress lol
 plot_model(lm_ideal_child3, type="pred",terms="YPLL_sum") 
 
-lm_ideal_child4 <- glm(ideal_age ~n_deaths + age + gender + scale(log(personal_income+1)) + scale(SES_subj) + scale(stress), data=d)
+lm_ideal_child4 <- glm(ideal_age ~ n_deaths + age + gender + ethnicity  + SES_subj + stress, data=d)
 summary(lm_ideal_child4) # nothing
 plot_model(lm_ideal_child4, type="pred",terms="n_deaths") 
 
@@ -807,6 +844,9 @@ summary(lm_env2) # nothing
 
 lm_env3 <- glm(environment_1 ~ scale(log(YPLL_sum+1)) + age + gender + scale(log(personal_income+1)) + scale(SES_subj) + scale(stress), data=d3)
 summary(lm_env3) # nothing
+
+lm_env4 <-glm(environment_1 ~ n_deaths + age + gender + ethnicity + SES_subj + stress, data=d)
+summary(lm_env4) # marginal for 5-6 deaths
 
 lm_env_tpt <-glm(env_transport ~scale(log(YPLL_sum+1)) + age + gender, data=d3)
 summary(lm_env_tpt) # Lol there's something but it's in the wrong direction
@@ -831,7 +871,7 @@ summary(lm_env_tpt3) # same
 plot_model(lm_env_tpt3, type="pred",terms="YPLL_sum")
 plot_model(lm_env_tpt3, type="est",show.values=T)
 
-lm_env_tpt4 <-glm(env_transport ~n_deaths + age + gender+ scale(log(personal_income+1)) + scale(SES_subj) + scale(stress), data=d)
+lm_env_tpt4 <-glm(env_transport ~ n_deaths + age + gender + ethnicity + SES_subj + stress, data=d)
 summary(lm_env_tpt4) # marginal for 5-6 deaths
 
 lm_env_tpt5 <-glm(env_transport ~n_prem + age + gender+ scale(log(personal_income+1)) + scale(SES_subj) + scale(stress), data=d3)
@@ -843,9 +883,9 @@ plot_model(lm_env_tpt5, type="est",show.values=T)
   ######## Smoker status ####
 d$smoker <- as.factor(d$smoker)
 summary(d$smoker)
-lm_smoker <- glm(smoker ~scale(log(YPLL_sum+1)) + age + gender, data=d3, family = binomial)
+lm_smoker <- glm(smoker ~scale(log(YPLL_sum+1)) + age + gender, data=d2, family = binomial)
 summary(lm_smoker) # Hallelujah dos
-fig7 = ggplot(d3, aes(x=YPLL_sum, y=smoker)) +
+fig7 = ggplot(d2, aes(x=YPLL_sum, y=smoker)) +
   theme_bw() +
   geom_point() +
   geom_smooth(method="lm") +
@@ -865,10 +905,10 @@ summary(lm_smoker3) # et en plus y a pas le stress, ça me gusta
 plot_model(lm_smoker3, type="est", show.values=T)
 plot_model(lm_smoker3, type = "pred", terms = "YPLL_sum")
 
-lm_smoker4 <- glm(smoker ~n_deaths + age + gender, data=d, family = binomial)
+lm_smoker4 <- glm(smoker ~ n_deaths + age + gender + ethnicity + SES_subj + stress, data=d, family = binomial)
 summary(lm_smoker4) # nicht mehr there
 
-lm_smoker5 <- glm(smoker ~n_prem + age + gender, data=d3, family = binomial)
+lm_smoker5 <- glm(smoker ~n_prem + age + gender + ethnicity + SES_subj + stress, data=d2, family = binomial)
 summary(lm_smoker5) # ah c'est reparti
 
 lm_smoker6 <- glm(smoker ~n_prem + age + gender+ scale(log(personal_income+1)) + scale(SES_subj), data=d3, family = binomial)
@@ -887,7 +927,7 @@ bptest(lm_smoker8) # p<0.01
 coeftest(lm_smoker8, vcov = vcovHC(lm_smoker8))
 plot_model(lm_smoker8, type = "pred", terms = "youngest_death [all]")
 
-### Check-up #### et breastfeed length : à refaire en ordinal logistic regression --> compliqué
+### Check-up #### et breastfeed length : à refaire en ordinal logistic regression --> compliqué ####
 # polr_checkup <- polr(checkup ~scale(log(YPLL_sum+1))+gender + age, data=d3)
 # summary(polr_checkup) # nein
 # 
@@ -1063,9 +1103,9 @@ lm_new <- glm(look_after_health ~ smoker + checkup, data =d)
 summary(lm_new)
 cor.test(d$look_after_health,d$smoker)
 
-count(d2 %>% filter(n_deaths <= 3))/(582-17) # 29% had 3 deaths or less in their family
-count(d2 %>% filter(n_deaths == 4))/(582-17) #26% had 4 deaths in their family
-count(d2 %>% filter(n_deaths >= 5))/(582-17) # 45% had 5 to 6 deaths in their family
+count(d3 %>% filter(n_deaths <= 3))/(count(d3)) # 47% had 3 deaths or less in their family
+count(d3 %>% filter(n_deaths == 4))/(count(d3)) #34% had 4 deaths in their family
+count(d3 %>% filter(n_deaths >= 5))/(count(d3)) # 15% had 5 to 6 deaths in their family / worse for younger samples, same for d4
 
 ###### History ###
 ### Choosing the right transformations of the variables based on hist of residuals ####

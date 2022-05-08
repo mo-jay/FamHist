@@ -1,7 +1,7 @@
 # Preparation of the data from the study 'Premature mortality and timing of your life: 
 # An exploratory correlational study' for analysis
 # Mona Joly and colleagues
-# 02/10/21
+# 08/05/22
 
 rm(list=ls())
 
@@ -15,6 +15,10 @@ if(!require(tidylog)){
   install.packages("tidylog")
   library(tidylog)
 }                           # to get output msgs like in Stata
+if(!require(dplyr)){
+  install.packages("dplyr")
+  library(dplyr)
+}
 if(!require(rmarkdown)){
   install.packages("rmarkdown")
   library(rmarkdown)
@@ -35,6 +39,11 @@ if(!require(car)){
   install.packages("car")
   library(car)
 }                           # for qqPlots
+if(!require(expss)){
+  install.packages("expss")
+  library(expss)
+}                           # to apply labels
+
 
 #render("1-example.Rmd")    # Supposedly for Rmarkdown
 
@@ -451,7 +460,7 @@ summary(d2$SES_subj)
 # Min. 1st Qu.  Median    Mean 3rd Qu.    Max. 
 # 1.00    5.00    6.00    5.52    7.00   10.00 
 class(d2$SES_subj)
-hist(d2$SES_subj) # distribution more normal than personal_income var
+# hist(d2$SES_subj) # distribution more normal than personal_income var
 d2$subjective_SES_1 <- NULL
 d2$subjective_SES_2 <- NULL
 d2$subjective_SES_3 <- NULL
@@ -560,7 +569,7 @@ d2 <- d2 %>% mutate(
 d2 %>% filter(is.na(n_deaths))
 table(d2$n_deaths)
 summary(d2$n_deaths)
-hist(d2$n_deaths)
+# hist(d2$n_deaths)
 count(d2 %>% filter(n_deaths <= 3))/(582-17) # 29% had 3 deaths or less in their family
 count(d2 %>% filter(n_deaths == 4))/(582-17) #26% had 4 deaths in their family
 count(d2 %>% filter(n_deaths >= 5))/(582-17) # 45% had 5 to 6 deaths in their family
@@ -604,7 +613,7 @@ summary(d2$n_prem)
 #     Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
 #    0.000   1.000   2.000   2.276   3.000   6.000     184
 
-hist(d2$n_prem)
+# hist(d2$n_prem)
 count(d2 %>% filter(n_prem <= 1))/(582-184) # 35% had 0 or 1 premature deaths in their family
 count(d2 %>% filter(n_prem > 1 & n_prem < 4))/(582-184) #43% had 2 or 3 premature deaths in their family
 count(d2 %>% filter(n_prem >= 4))/(582-184) # 21% had 4 to 6 premature deaths in their family
@@ -627,7 +636,7 @@ for (i in 1:nrow(d2)){
   d2$youngest_death[i] <- pmin(d2$parent1_age_2[i],d2$parent2_age_2[i],d2$gp1_age_2[i],d2$gp2_age_2[i],d2$gp3_age_2[i],d2$gp4_age_2[i],na.rm=TRUE)
 }
 summary(d2$youngest_death)
-hist(d2$youngest_death)
+# hist(d2$youngest_death)
 mean(d2$youngest_death,na.rm=TRUE)
 
     ####### PATIENCE SCORE
@@ -668,13 +677,13 @@ d2 <- d2 %>% mutate(
     Q5  == "In 12 months" ~ 32),
 ) 
 summary(d2$patience_score)
-hist(d2$patience_score)
+# hist(d2$patience_score)
 
 d2 <- d2 %>% mutate(
   time_discounting = 33-patience_score
 )
 summary(d2$time_discounting)
-hist(d2$time_discounting)
+# hist(d2$time_discounting)
 
 d2$Q1 <- NULL
 d2$Q2 <- NULL
@@ -713,7 +722,7 @@ for (i in 1:nrow(d2)){
   d2$controllability[i] <- mean(c(d2$parent1_control_1[i],d2$parent2_control_1[i],d2$gp1_control_1[i],d2$gp2_control_1[i],d2$gp3_control_1[i],d2$gp4_control_1[i]), na.rm=TRUE)
 }
 summary(d2$controllability)
-hist(d2$controllability)
+# hist(d2$controllability)
 
 for (i in 1:nrow(d2)){
   d2$controllability_parents[i] <- mean(c(d2$parent1_control_1[i],d2$parent2_control_1[i]), na.rm=TRUE)
@@ -730,7 +739,7 @@ for (i in 1:nrow(d2)){
   d2$closeness[i] <- mean(c(d2$parent1_close_1[i],d2$parent2_close_1[i],d2$gp1_close_1[i],d2$gp2_close_1[i],d2$gp3_close_1[i],d2$gp4_close_1[i]), na.rm=TRUE)
 }
 summary(d2$closeness)
-hist(d2$closeness)
+# hist(d2$closeness)
 
 for (i in 1:nrow(d2)){
   d2$closeness_parents[i] <- mean(c(d2$parent1_close_1[i],d2$parent2_close_1[i]), na.rm=TRUE)
@@ -750,18 +759,18 @@ summary(d2$closeness_gp)
 # also removes the 184 NA --> 384 left
 
     ## Look_after_health var
-hist(d2$look_after_health)
+# hist(d2$look_after_health)
 ggdensity(d2$look_after_health)
 qqPlot(d2$look_after_health)
 skewness(d2$look_after_health) #-1.28 --> highly negatively skewed
-hist(-log(max(d2$look_after_health)-d2$look_after_health+1))
+# hist(-log(max(d2$look_after_health)-d2$look_after_health+1))
 ggdensity(-log(max(d2$look_after_health)-d2$look_after_health+1))
 d2$look_after_health_log <- -log(max(d2$look_after_health)-d2$look_after_health+1)
 skewness(d2$look_after_health_log) #1.57, worse
 qqPlot(d2$look_after_health_log)
 
 d2$look_after_health_sqrt <- -sqrt(max(d2$look_after_health+1)-d2$look_after_health)
-hist(d2$look_after_health_sqrt)
+# hist(d2$look_after_health_sqrt)
 skewness(d2$look_after_health_sqrt)  #-0.17, great
 qqPlot(d2$look_after_health_sqrt) # besser
 
@@ -827,13 +836,13 @@ qqPlot(d2$look_after_health_sqrt) # besser
 
     ## age var
 class(d2$age)
-hist(d2$age)   # uniform distribution, don't really know what to do about it
+# hist(d2$age)   # uniform distribution, don't really know what to do about it
 skewness(d2$age) # 0.002, well at least it's symmetric
 ggdensity(d2$age) # quite terrible. Can't see how to improve a uniform distrib.
 
     ## personal income var
 d2$personal_income <- as.numeric(d2$personal_income)
-hist(d2$personal_income)
+# hist(d2$personal_income)
 skewness(d2$personal_income) #1.44
 ggdensity(d2$personal_income)
 
@@ -859,7 +868,7 @@ ggdensity(d2$SES_subj)
 qqPlot(d2$SES_subj) # Not that bad? Transformations do not help anyway
 
     ## Extrinsic risk var
-hist(d2$extrinsic_risk)
+# hist(d2$extrinsic_risk)
 skewness(d2$extrinsic_risk)
 # skewness(sqrt(d3$extrinsic_risk))
 # skewness(log(d3$extrinsic_risk+1))
@@ -883,7 +892,7 @@ skewness(d2$extrinsic_risk)
 # just as fine as sqrt.
 
     ## Patience score var
-hist(d2$patience_score) 
+# hist(d2$patience_score) 
 ggdensity(d2$patience_score) # kind of bimodal
 # Maybe I can binarise it!
 d2 <- d2 %>% mutate(
@@ -899,7 +908,7 @@ plot(d2$patience_score_bi)
 
     ### Age 1st child var
 ggdensity(d2$age_first_child) #positively skewed. It's fine though
-hist(d2$age_first_child)
+# hist(d2$age_first_child)
 skewness(d2$age_first_child)  #0.25
 # d2$age_child1_sqrt <- transform(
 #   d2$age_first_child,
@@ -913,8 +922,38 @@ ggdensity(d2$ideal_age) #good
 skewness(d2$ideal_age)  #0.15
 
     ### Green behaviour
-hist(d2$environment_1) # negatively skewed, but fine
-hist(d2$env_transport) # quite uniform. Maybe bimodal
+# hist(d2$environment_1) # negatively skewed, but fine
+# hist(d2$env_transport) # quite uniform. Maybe bimodal
+
+
+### Apply variable labels #####
+
+d2 = apply_labels(d2,
+                  gender = "Gender",
+                  age = "Age",
+                  look_after_health = "Effort in looking after health",
+                  checkup = "Time since last medical check-up",
+                  smoker = "Smoker status",
+                  environment_1 = "Green behaviour",
+                  env_transport = "Green behaviour for transport usage",
+                  extrinsic_risk = "Perceived uncontrollable mortality risk",
+                  age_first_child = "Age at first child",
+                  breastfeed_length = "Breastfeeding duration",
+                  ideal_age = "Ideal age at first child",
+                  parents_dead = "Number of deceased parents",
+                  gp_dead = "Number of deceased grandparents",
+                  n_deaths = "Number of deaths in the family",
+                  stress = "Stress",
+                  ethnicity = "Ethnicity",
+                  personal_income = "Personal income",
+                  SES_subj = "Subjective SES",
+                  YPLL_sum = "Sum of years of potential life lost",
+                  n_prem = "Number of premature deaths",
+                  youngest_death = "Youngest death in the family",
+                  patience_score = "Patience score",
+                  time_discounting = "Financial time discounting",
+                  controllability = "Feeling of control over familial deaths",
+                  closeness = "Closeness to the deceased relatives")
 
 ###################################################
 ######### Creation of the final data table ########
